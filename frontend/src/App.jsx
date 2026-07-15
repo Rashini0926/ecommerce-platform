@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import Dashboard from "./pages/Dashboard";
 
 
 function App() {
@@ -34,12 +35,18 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <h2 className="container mt-5">
-              Customer Dashboard
-            </h2>
+            
           </ProtectedRoute>
         }
       />
+      <Route
+ path="/dashboard"
+ element={
+   <ProtectedRoute>
+     <Dashboard />
+   </ProtectedRoute>
+ }
+/>
 
 
     </Routes>
