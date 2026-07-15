@@ -3,30 +3,49 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Products from "./pages/Products";
-import Cart from "./pages/Cart";
-import Wishlist from "./pages/Wishlist";
+import ProtectedRoute from "./auth/ProtectedRoute";
 
 
 function App() {
 
   return (
+
     <Routes>
 
-      <Route path="/" element={<Home />} />
+      <Route 
+        path="/" 
+        element={<Home />} 
+      />
 
-      <Route path="/login" element={<Login />} />
 
-      <Route path="/register" element={<Register />} />
+      <Route 
+        path="/login" 
+        element={<Login />} 
+      />
 
-      <Route path="/products" element={<Products />} />
 
-      <Route path="/cart" element={<Cart />} />
+      <Route 
+        path="/register" 
+        element={<Register />} 
+      />
 
-      <Route path="/wishlist" element={<Wishlist />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <h2 className="container mt-5">
+              Customer Dashboard
+            </h2>
+          </ProtectedRoute>
+        }
+      />
+
 
     </Routes>
+
   );
+
 }
 
 
