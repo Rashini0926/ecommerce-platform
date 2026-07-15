@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
-import { 
-  FaSearch, 
-  FaShoppingCart, 
-  FaHeart, 
-  FaUser 
+import {
+  FaSearch,
+  FaShoppingCart,
+  FaHeart,
+  FaUser
 } from "react-icons/fa";
+
+import { useAuth } from "../../context/AuthContext";
 
 
 function Navbar() {
+
+  const { user, logout } = useAuth();
+
 
   return (
 
@@ -15,8 +20,8 @@ function Navbar() {
 
       <div className="container">
 
-        {/* Brand */}
-        <Link 
+
+        <Link
           className="navbar-brand fw-bold text-primary fs-3"
           to="/"
         >
@@ -24,7 +29,7 @@ function Navbar() {
         </Link>
 
 
-        {/* Mobile Toggle Button */}
+
         <button
           className="navbar-toggler"
           type="button"
@@ -37,55 +42,42 @@ function Navbar() {
         </button>
 
 
-        {/* Navbar Content */}
-        <div 
+
+
+        <div
           className="collapse navbar-collapse"
           id="navbarMenu"
         >
 
 
-          {/* Search Bar */}
+
           <form className="d-flex mx-auto w-50">
 
             <input
               className="form-control"
-              type="search"
               placeholder="Search products..."
             />
 
-            <button 
-              className="btn btn-primary ms-2"
-              type="button"
-            >
+
+            <button className="btn btn-primary ms-2">
+
               <FaSearch />
+
             </button>
+
 
           </form>
 
 
 
-          {/* Menu Items */}
+
+
           <ul className="navbar-nav ms-auto align-items-center">
 
 
-            {/* Home */}
             <li className="nav-item mx-2">
 
-              <Link 
-                className="nav-link"
-                to="/"
-              >
-                Home
-              </Link>
-
-            </li>
-
-
-
-            {/* Products */}
-            <li className="nav-item mx-2">
-
-              <Link 
+              <Link
                 className="nav-link"
                 to="/products"
               >
@@ -96,10 +88,10 @@ function Navbar() {
 
 
 
-            {/* Wishlist */}
+
             <li className="nav-item mx-2">
 
-              <Link 
+              <Link
                 className="nav-link"
                 to="/wishlist"
               >
@@ -112,10 +104,11 @@ function Navbar() {
 
 
 
-            {/* Cart */}
+
+
             <li className="nav-item mx-2">
 
-              <Link 
+              <Link
                 className="nav-link"
                 to="/cart"
               >
@@ -128,37 +121,95 @@ function Navbar() {
 
 
 
-            {/* Login */}
-            <li className="nav-item mx-2">
-
-              <Link
-                className="btn btn-outline-primary"
-                to="/login"
-              >
-
-                <FaUser className="me-1" />
-
-                Login
-
-              </Link>
-
-            </li>
 
 
+            {
+              user ? (
 
-            {/* Register */}
-            <li className="nav-item mx-2">
+                <>
 
-              <Link
-                className="btn btn-primary"
-                to="/register"
-              >
 
-                Register
+                  <li className="nav-item mx-2">
 
-              </Link>
+                    <Link
+                      className="btn btn-outline-primary"
+                      to="/dashboard"
+                    >
 
-            </li>
+                      Hi, {user.name}
+
+                    </Link>
+
+                  </li>
+
+
+
+                  <li className="nav-item mx-2">
+
+                    <button
+
+                      className="btn btn-danger"
+
+                      onClick={logout}
+
+                    >
+
+                      Logout
+
+                    </button>
+
+
+                  </li>
+
+
+                </>
+
+
+              ) : (
+
+
+                <>
+
+
+                  <li className="nav-item mx-2">
+
+                    <Link
+                      className="btn btn-outline-primary"
+                      to="/login"
+                    >
+
+                      <FaUser className="me-1"/>
+
+                      Login
+
+                    </Link>
+
+
+                  </li>
+
+
+
+                  <li className="nav-item mx-2">
+
+                    <Link
+                      className="btn btn-primary"
+                      to="/register"
+                    >
+
+                      Register
+
+                    </Link>
+
+
+                  </li>
+
+
+                </>
+
+
+              )
+            }
+
 
 
           </ul>
