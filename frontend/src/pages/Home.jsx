@@ -1,8 +1,15 @@
+import Navbar from "../components/layout/Navbar";
+
 function Home() {
   return (
-    <div>
-      <h2>Welcome to E-Commerce Platform</h2>
-    </div>
+    <>
+      <Navbar />
+
+      <div className="container mt-5">
+        <h2>Welcome to ShopEase</h2>
+        <p>Your one-stop online shopping destination.</p>
+      </div>
+    </>
   );
 }
 
