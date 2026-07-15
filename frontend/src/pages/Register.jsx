@@ -1,31 +1,69 @@
 function Register() {
-  return (
-    <div className="container mt-5">
 
-      <h2>Create Account</h2>
+return (
 
-      <input
-        className="form-control mb-3"
-        placeholder="Name"
-      />
+<div className="container mt-5">
 
-      <input
-        className="form-control mb-3"
-        placeholder="Email"
-      />
+<div className="row justify-content-center">
 
-      <input
-        className="form-control mb-3"
-        type="password"
-        placeholder="Password"
-      />
+<div className="col-md-5">
 
-      <button className="btn btn-success">
-        Register
-      </button>
 
-    </div>
-  );
+<div className="card shadow">
+
+<div className="card-body">
+
+
+<h2 className="text-center mb-4">
+Create Account
+</h2>
+
+
+<input
+className="form-control mb-3"
+placeholder="Full Name"
+/>
+
+
+<input
+className="form-control mb-3"
+placeholder="Email Address"
+/>
+
+
+<input
+type="password"
+className="form-control mb-3"
+placeholder="Password"
+/>
+
+
+<input
+type="password"
+className="form-control mb-3"
+placeholder="Confirm Password"
+/>
+
+
+<button className="btn btn-success w-100">
+Register
+</button>
+
+
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+</div>
+
+);
+
 }
 
 export default Register;
