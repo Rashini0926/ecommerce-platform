@@ -1,20 +1,16 @@
-import { useAuth } from "../context/AuthContext";
+import WelcomeCard from "../components/dashboard/WelcomeCard";
+import SummaryCard from "../components/dashboard/SummaryCard";
 
 function Dashboard() {
-
-  const { user } = useAuth();
-
   return (
-    <div className="container mt-5">
+    <div className="container mt-4">
+      <WelcomeCard />
 
-      <h2>Customer Dashboard</h2>
-
-      <hr />
-
-      <h4>Welcome {user?.name}</h4>
-
-      <p>{user?.email}</p>
-
+      <div className="row">
+        <SummaryCard title="Orders" value="0" color="primary" />
+        <SummaryCard title="Wishlist" value="0" color="danger" />
+        <SummaryCard title="Cart" value="0" color="success" />
+      </div>
     </div>
   );
 }
