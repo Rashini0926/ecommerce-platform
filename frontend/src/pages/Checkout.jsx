@@ -8,7 +8,7 @@ function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
 
 
-  // This will later come from cart state / backend
+  // Temporary data - will later come from cart/backend
   const orderItems = [
     {
       id: 1,
@@ -28,7 +28,7 @@ function Checkout() {
 
 
   const subtotal = orderItems.reduce(
-    (total,item)=> total + item.price * item.quantity,
+    (total, item) => total + item.price * item.quantity,
     0
   );
 
@@ -55,12 +55,13 @@ function Checkout() {
 
 
 
-        {/* CUSTOMER DETAILS */}
+        {/* DELIVERY INFORMATION */}
 
         <div className="col-lg-7">
 
 
           <div className="card shadow-sm border-0">
+
 
             <div className="card-body">
 
@@ -151,6 +152,7 @@ function Checkout() {
                     placeholder="Enter complete address"
                   />
 
+
                 </div>
 
 
@@ -159,13 +161,14 @@ function Checkout() {
 
             </div>
 
+
           </div>
 
 
 
 
 
-          {/* PAYMENT */}
+          {/* PAYMENT METHOD */}
 
 
           <div className="card shadow-sm border-0 mt-4">
@@ -180,6 +183,7 @@ function Checkout() {
 
 
 
+
               <div className="form-check mb-3">
 
 
@@ -187,7 +191,7 @@ function Checkout() {
                   className="form-check-input"
                   type="radio"
                   value="Cash on Delivery"
-                  checked={paymentMethod==="Cash on Delivery"}
+                  checked={paymentMethod === "Cash on Delivery"}
                   onChange={(e)=>setPaymentMethod(e.target.value)}
                 />
 
@@ -202,6 +206,7 @@ function Checkout() {
 
 
 
+
               <div className="form-check">
 
 
@@ -209,7 +214,7 @@ function Checkout() {
                   className="form-check-input"
                   type="radio"
                   value="Card Payment"
-                  checked={paymentMethod==="Card Payment"}
+                  checked={paymentMethod === "Card Payment"}
                   onChange={(e)=>setPaymentMethod(e.target.value)}
                 />
 
@@ -256,8 +261,9 @@ function Checkout() {
 
 
 
+
               {
-                orderItems.map(item=>(
+                orderItems.map(item => (
 
 
                   <div
@@ -266,28 +272,33 @@ function Checkout() {
                   >
 
 
-                    {/* Replace this with actual product image later */}
+
+                    {/* Product image placeholder */}
 
                     <div
-                      className="bg-light rounded me-3"
+                      className="bg-light rounded me-3 d-flex align-items-center justify-content-center"
                       style={{
                         width:"70px",
                         height:"70px"
                       }}
                     >
 
+                      {/* Image will be added here later */}
+
                     </div>
 
 
 
+
                     <div className="flex-grow-1">
+
 
                       <h6 className="mb-1">
                         {item.name}
                       </h6>
 
 
-                      <small>
+                      <small className="text-muted">
                         Quantity: {item.quantity}
                       </small>
 
@@ -296,8 +307,9 @@ function Checkout() {
 
 
 
+
                     <strong>
-                      Rs. {(item.price*item.quantity).toLocaleString()}
+                      Rs. {(item.price * item.quantity).toLocaleString()}
                     </strong>
 
 
@@ -308,6 +320,8 @@ function Checkout() {
                 ))
 
               }
+
+
 
 
 
@@ -322,6 +336,7 @@ function Checkout() {
                   Subtotal
                 </span>
 
+
                 <strong>
                   Rs. {subtotal.toLocaleString()}
                 </strong>
@@ -332,11 +347,13 @@ function Checkout() {
 
 
 
+
               <div className="d-flex justify-content-between mb-2">
 
                 <span>
                   Shipping
                 </span>
+
 
                 <span className="text-success">
                   Free
@@ -348,11 +365,14 @@ function Checkout() {
 
 
 
+
               <hr/>
 
 
 
+
               <div className="d-flex justify-content-between">
+
 
                 <h5>
                   Total
@@ -369,11 +389,18 @@ function Checkout() {
 
 
 
-              <button
+
+
+              {/* Navigate to Order Success */}
+
+              <Link
+                to="/order-success"
                 className="btn btn-success w-100 mt-4"
               >
                 Place Order
-              </button>
+              </Link>
+
+
 
 
 
@@ -384,6 +411,7 @@ function Checkout() {
               >
                 Back to Cart
               </Link>
+
 
 
 
