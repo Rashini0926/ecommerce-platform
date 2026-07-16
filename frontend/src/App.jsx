@@ -5,7 +5,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
-
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 
 function App() {
 
@@ -46,6 +47,14 @@ function App() {
      <Dashboard />
    </ProtectedRoute>
  }
+/>
+<Route 
+  path="/cart" 
+  element={<Cart />} 
+  />
+<Route 
+  path="/checkout" 
+  element={<Checkout />} 
 />
 
 
