@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
+import MyOrders from "./pages/MyOrders";
 
 function App() {
 
@@ -61,7 +62,10 @@ function App() {
  path="/order-success"
  element={<OrderSuccess/>}
 />
-
+<Route
+  path="/orders"
+  element={<MyOrders />}
+/>
 
     </Routes>
 
