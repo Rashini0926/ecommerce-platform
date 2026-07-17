@@ -1,7 +1,5 @@
 # 🛒 E-Commerce Platform
-A full-stack E-Commerce web application developed as an internship assignment.
-The system provides customer shopping features with a modern React frontend and Laravel REST API backend.
----
+
 ## 🚀 Tech Stack
 ### Frontend
 - React.js
