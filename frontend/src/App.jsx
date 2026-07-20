@@ -5,30 +5,19 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import Wishlist from "./pages/Wishlist";
+import Cart from "./pages/Cart";
+
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
 
-      {/* Public */}
+      <Route path="/login" element={<Login />} />
 
-      <Route
-        path="/"
-        element={<Home />}
-      />
-
-      <Route
-        path="/login"
-        element={<Login />}
-      />
-
-      <Route
-        path="/register"
-        element={<Register />}
-      />
-
-      {/* Protected */}
+      <Route path="/register" element={<Register />} />
 
       <Route
         path="/dashboard"
@@ -48,6 +37,23 @@ function App() {
         }
       />
 
+      <Route
+        path="/wishlist"
+        element={
+          <ProtectedRoute>
+            <Wishlist />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/cart"
+        element={
+          <ProtectedRoute>
+            <Cart />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

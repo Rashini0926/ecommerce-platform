@@ -5,11 +5,9 @@ import SummaryCard from "../components/dashboard/SummaryCard";
 function Dashboard() {
   return (
     <div className="container py-4">
-
       <WelcomeCard />
 
       <div className="row">
-
         <SummaryCard
           title="Orders"
           value="0"
@@ -18,20 +16,18 @@ function Dashboard() {
 
         <SummaryCard
           title="Wishlist"
-          value="0"
+          value="3"
           color="danger"
         />
 
         <SummaryCard
           title="Cart"
-          value="0"
+          value="2"
           color="success"
         />
-
       </div>
 
       <div className="card shadow-sm border-0 mt-4">
-
         <div className="card-body">
 
           <h4 className="mb-3">
@@ -54,13 +50,19 @@ function Dashboard() {
               My Profile
             </Link>
 
-            <button className="btn btn-outline-danger">
+            <Link
+              to="/wishlist"
+              className="btn btn-outline-danger"
+            >
               Wishlist
-            </button>
+            </Link>
 
-            <button className="btn btn-outline-success">
+            <Link
+              to="/cart"
+              className="btn btn-outline-success"
+            >
               Cart
-            </button>
+            </Link>
 
             <button className="btn btn-outline-secondary">
               Settings
@@ -69,9 +71,7 @@ function Dashboard() {
           </div>
 
         </div>
-
       </div>
-
     </div>
   );
 }
