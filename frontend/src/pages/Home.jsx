@@ -3,6 +3,9 @@ import Hero from "../components/home/Hero";
 import Categories from "../components/home/Categories";
 import FeaturedProducts from "../components/home/FeaturedProducts";
 import FlashDeals from "../components/home/FlashDeals";
+import BestSellers from "../components/home/BestSellers";
+import WhyChooseUs from "../components/home/WhyChooseUs";
+import Newsletter from "../components/home/Newsletter";
 import Footer from "../components/layout/Footer";
 
 function Home() {
@@ -17,6 +20,12 @@ function Home() {
       <FeaturedProducts />
 
       <FlashDeals />
+
+      <BestSellers />
+
+      <WhyChooseUs />
+
+      <Newsletter />
 
       <Footer />
     </>
