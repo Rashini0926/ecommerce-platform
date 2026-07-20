@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import WelcomeCard from "../components/dashboard/WelcomeCard";
 import SummaryCard from "../components/dashboard/SummaryCard";
 
@@ -39,13 +40,19 @@ function Dashboard() {
 
           <div className="d-flex flex-wrap gap-3">
 
-            <button className="btn btn-primary">
+            <Link
+              to="/"
+              className="btn btn-primary"
+            >
               Continue Shopping
-            </button>
+            </Link>
 
-            <button className="btn btn-outline-primary">
+            <Link
+              to="/profile"
+              className="btn btn-outline-primary"
+            >
               My Profile
-            </button>
+            </Link>
 
             <button className="btn btn-outline-danger">
               Wishlist
