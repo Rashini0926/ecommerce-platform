@@ -15,12 +15,14 @@ class AuthController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|max:15',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
             'full_name' => $validated['full_name'],
             'email' => $validated['email'],
+            'phone' => $validated['phone'],
             'password' => $validated['password'],
             'role' => 'CUSTOMER',
         ]);
@@ -48,7 +50,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($validated['password'], $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid email or password.'
+                'message' => 'Invalid email or password.',
             ], 401);
         }
 
@@ -62,7 +64,7 @@ class AuthController extends Controller
         ]);
     }
 
-    // Logged-in User Profile
+    // Profile
     public function profile(Request $request)
     {
         return response()->json([
