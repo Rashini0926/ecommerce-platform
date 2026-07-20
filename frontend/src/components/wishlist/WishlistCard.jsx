@@ -2,15 +2,22 @@ import { FaHeart, FaShoppingCart, FaTrash } from "react-icons/fa";
 
 function WishlistCard({ product }) {
   return (
-    <div className="card shadow-sm h-100">
-      <img
-        src={product.image}
-        alt={product.name}
-        className="card-img-top"
-        style={{ height: "220px", objectFit: "cover" }}
-      />
+    <div className="card wishlist-card hover-lift card-hover-shadow h-100">
+      <div className="product-image-wrap position-relative">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="wishlist-image"
+          style={{ height: "220px", objectFit: "cover" }}
+        />
 
-      <div className="card-body">
+        <span className="badge bg-danger position-absolute top-0 start-0 m-3">
+          <FaHeart className="me-2" />
+          Saved
+        </span>
+      </div>
+
+      <div className="card-body p-4">
         <h5>{product.name}</h5>
 
         <h4 className="text-primary">
@@ -18,7 +25,7 @@ function WishlistCard({ product }) {
         </h4>
 
         <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success">
+          <button className="btn btn-success ripple">
             <FaShoppingCart className="me-2" />
             Add to Cart
           </button>
@@ -28,11 +35,6 @@ function WishlistCard({ product }) {
             Remove
           </button>
         </div>
-      </div>
-
-      <div className="card-footer text-center">
-        <FaHeart className="text-danger me-2" />
-        Saved for Later
       </div>
     </div>
   );

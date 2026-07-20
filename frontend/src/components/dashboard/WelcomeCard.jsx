@@ -1,5 +1,5 @@
 import { useAuth } from "../../context/AuthContext";
-import { FaUserCircle } from "react-icons/fa";
+import { FaRegSmile, FaUserCircle } from "react-icons/fa";
 
 function WelcomeCard() {
   const { user } = useAuth();
@@ -13,30 +13,30 @@ function WelcomeCard() {
   };
 
   return (
-    <div className="card shadow-sm border-0 mb-4">
-      <div className="card-body d-flex align-items-center">
+    <div className="card dashboard-banner shadow-sm mb-4 slide-up">
+      <div className="card-body p-4 p-lg-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4">
+        <div className="d-flex align-items-center gap-3">
+          <FaUserCircle size={74} className="text-white" />
 
-        <FaUserCircle
-          size={70}
-          className="text-primary me-4"
-        />
+          <div>
+            <span className="badge bg-light text-primary mb-2">
+              <FaRegSmile className="me-2" />
+              Customer dashboard
+            </span>
 
-        <div>
+            <h2 className="mb-1">
+              {getGreeting()}, {user?.full_name}
+            </h2>
 
-          <h3 className="mb-1">
-            {getGreeting()}, {user?.full_name} 👋
-          </h3>
-
-          <p className="text-muted mb-1">
-            {user?.email}
-          </p>
-
-          <span className="badge bg-success">
-            {user?.role}
-          </span>
-
+            <p className="mb-0 text-white-50">
+              {user?.email}
+            </p>
+          </div>
         </div>
 
+        <span className="badge bg-success align-self-start align-self-md-center">
+          {user?.role}
+        </span>
       </div>
     </div>
   );

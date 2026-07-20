@@ -1,107 +1,100 @@
 import { useAuth } from "../context/AuthContext";
 import {
-  FaUserCircle,
-  FaEnvelope,
-  FaPhone,
-  FaUserTag,
   FaEdit,
+  FaEnvelope,
   FaLock,
+  FaPhone,
+  FaUser,
+  FaUserTag,
 } from "react-icons/fa";
+import Footer from "../components/layout/Footer";
+import Navbar from "../components/layout/Navbar";
 
 function Profile() {
   const { user } = useAuth();
 
   return (
-    <div className="container py-5">
+    <div className="app-page">
+      <Navbar />
 
-      <div className="row justify-content-center">
+      <main className="container py-5">
+        <div className="row justify-content-center">
+          <div className="col-lg-9">
+            <div className="card glass-card border-0">
+              <div className="card-body p-4 p-lg-5">
+                <div className="text-center mb-5 slide-up">
+                  <div className="profile-avatar mx-auto mb-3">
+                    <FaUser size={54} />
+                  </div>
 
-        <div className="col-lg-8">
+                  <h2 className="mt-3 mb-2">
+                    {user?.full_name}
+                  </h2>
 
-          <div className="card shadow border-0">
+                  <span className="badge bg-success">
+                    {user?.role}
+                  </span>
+                </div>
 
-            <div className="card-body p-5">
+                <div className="row g-3 mb-4">
+                  <div className="col-md-6">
+                    <div className="info-row h-100">
+                      <div className="text-muted fw-semibold mb-2">
+                        <FaEnvelope className="me-2 text-primary" />
+                        Email
+                      </div>
 
-              <div className="text-center mb-4">
+                      <div className="fw-bold">
+                        {user?.email}
+                      </div>
+                    </div>
+                  </div>
 
-                <FaUserCircle
-                  size={100}
-                  className="text-primary"
-                />
+                  <div className="col-md-6">
+                    <div className="info-row h-100">
+                      <div className="text-muted fw-semibold mb-2">
+                        <FaPhone className="me-2 text-primary" />
+                        Phone
+                      </div>
 
-                <h2 className="mt-3">
-                  {user?.full_name}
-                </h2>
+                      <div className="fw-bold">
+                        {user?.phone || "Not Added"}
+                      </div>
+                    </div>
+                  </div>
 
-                <span className="badge bg-success">
-                  {user?.role}
-                </span>
+                  <div className="col-12">
+                    <div className="info-row">
+                      <div className="text-muted fw-semibold mb-2">
+                        <FaUserTag className="me-2 text-primary" />
+                        Role
+                      </div>
 
+                      <div className="fw-bold">
+                        {user?.role}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="d-flex flex-column flex-sm-row gap-3">
+                  <button className="btn btn-primary ripple">
+                    <FaEdit className="me-2" />
+                    Edit Profile
+                  </button>
+
+                  <button className="btn btn-outline-secondary">
+                    <FaLock className="me-2" />
+                    Change Password
+                  </button>
+                </div>
               </div>
-
-              <hr />
-
-              <div className="row mb-3">
-
-                <div className="col-md-4 fw-bold">
-                  <FaEnvelope className="me-2" />
-                  Email
-                </div>
-
-                <div className="col-md-8">
-                  {user?.email}
-                </div>
-
-              </div>
-
-              <div className="row mb-3">
-
-                <div className="col-md-4 fw-bold">
-                  <FaPhone className="me-2" />
-                  Phone
-                </div>
-
-                <div className="col-md-8">
-                  {user?.phone || "Not Added"}
-                </div>
-
-              </div>
-
-              <div className="row mb-4">
-
-                <div className="col-md-4 fw-bold">
-                  <FaUserTag className="me-2" />
-                  Role
-                </div>
-
-                <div className="col-md-8">
-                  {user?.role}
-                </div>
-
-              </div>
-
-              <div className="d-flex gap-3">
-
-                <button className="btn btn-primary">
-                  <FaEdit className="me-2" />
-                  Edit Profile
-                </button>
-
-                <button className="btn btn-outline-secondary">
-                  <FaLock className="me-2" />
-                  Change Password
-                </button>
-
-              </div>
-
             </div>
-
           </div>
-
         </div>
+      </main>
 
-      </div>
-
+      <Footer />
     </div>
   );
 }

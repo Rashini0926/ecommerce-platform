@@ -1,24 +1,36 @@
+import {
+  FaBasketShopping,
+  FaCouch,
+  FaDumbbell,
+  FaLaptop,
+  FaShirt,
+  FaSpa,
+} from "react-icons/fa6";
+
 const categories = [
-  { id: 1, name: "Electronics", icon: "💻" },
-  { id: 2, name: "Fashion", icon: "👕" },
-  { id: 3, name: "Home & Living", icon: "🏠" },
-  { id: 4, name: "Beauty", icon: "💄" },
-  { id: 5, name: "Sports", icon: "⚽" },
-  { id: 6, name: "Groceries", icon: "🛒" },
+  { id: 1, name: "Electronics", icon: <FaLaptop /> },
+  { id: 2, name: "Fashion", icon: <FaShirt /> },
+  { id: 3, name: "Home & Living", icon: <FaCouch /> },
+  { id: 4, name: "Beauty", icon: <FaSpa /> },
+  { id: 5, name: "Sports", icon: <FaDumbbell /> },
+  { id: 6, name: "Groceries", icon: <FaBasketShopping /> },
 ];
 
 function Categories() {
   return (
-    <section className="container py-5">
-      <h2 className="text-center mb-4">Shop by Category</h2>
+    <section className="container section-padding">
+      <div className="text-center mb-5 fade-in">
+        <span className="section-kicker">Explore departments</span>
+        <h2 className="mt-2">Shop by Category</h2>
+      </div>
 
-      <div className="row">
+      <div className="row g-4">
         {categories.map((category) => (
-          <div className="col-md-4 col-lg-2 mb-4" key={category.id}>
-            <div className="card text-center shadow-sm h-100">
-              <div className="card-body">
-                <div style={{ fontSize: "40px" }}>{category.icon}</div>
-                <h6 className="mt-3">{category.name}</h6>
+          <div className="col-6 col-md-4 col-lg-2" key={category.id}>
+            <div className="card glass-card hover-lift card-hover-shadow text-center h-100">
+              <div className="card-body py-4">
+                <div className="icon-circle fs-3 mb-3">{category.icon}</div>
+                <h6 className="mb-0">{category.name}</h6>
               </div>
             </div>
           </div>
