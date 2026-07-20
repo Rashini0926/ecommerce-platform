@@ -2,11 +2,10 @@ import Navbar from "../components/layout/Navbar";
 import Hero from "../components/home/Hero";
 import Categories from "../components/home/Categories";
 import FeaturedProducts from "../components/home/FeaturedProducts";
+import FlashDeals from "../components/home/FlashDeals";
 import Footer from "../components/layout/Footer";
 
-
 function Home() {
-
   return (
     <>
       <Navbar />
@@ -16,8 +15,10 @@ function Home() {
       <Categories />
 
       <FeaturedProducts />
-      <Footer />
 
+      <FlashDeals />
+
+      <Footer />
     </>
   );
 }
