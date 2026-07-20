@@ -58,7 +58,27 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login successful.',
             'token' => $token,
-            'user' => $user
+            'user' => $user,
+        ]);
+    }
+
+    // Logged-in User Profile
+    public function profile(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'user' => $request->user(),
+        ]);
+    }
+
+    // Logout
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout successful.',
         ]);
     }
 }
