@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import {
-  FaShoppingBag,
   FaHeart,
+  FaShoppingBag,
   FaShoppingCart,
 } from "react-icons/fa";
 
@@ -10,45 +10,43 @@ function SummaryCard({
   value,
   color,
 }) {
-
   const icons = {
-    Orders: <FaShoppingBag size={35} />,
-    Wishlist: <FaHeart size={35} />,
-    Cart: <FaShoppingCart size={35} />,
+    Orders: <FaShoppingBag />,
+    Wishlist: <FaHeart />,
+    Cart: <FaShoppingCart />,
+  };
+
+  const links = {
+    Orders: "/dashboard",
+    Wishlist: "/wishlist",
+    Cart: "/cart",
   };
 
   return (
-    <div className="col-md-4 mb-4">
+    <div className="col-md-4">
+      <div className="card stat-card hover-lift card-hover-shadow h-100">
+        <div className="card-body p-4">
+          <div className="d-flex align-items-center justify-content-between mb-4">
+            <div className={`icon-circle fs-3 text-${color}`}>
+              {icons[title]}
+            </div>
 
-      <div
-        className={`card border-${color} shadow-sm h-100`}
-      >
-
-        <div className="card-body text-center">
-
-          <div
-            className={`text-${color} mb-3`}
-          >
-            {icons[title]}
+            <span className={`badge badge-soft-${color}`}>
+              Live
+            </span>
           </div>
 
-          <h5>{title}</h5>
-
-          <h2 className={`text-${color}`}>
-            {value}
-          </h2>
+          <p className="text-muted mb-1">{title}</p>
+          <h2 className={`text-${color} mb-3`}>{value}</h2>
 
           <Link
-            to="/"
-            className={`btn btn-outline-${color} mt-3`}
+            to={links[title]}
+            className={`btn btn-outline-${color} w-100`}
           >
-            View
+            View Details
           </Link>
-
         </div>
-
       </div>
-
     </div>
   );
 }
