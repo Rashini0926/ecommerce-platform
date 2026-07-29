@@ -379,6 +379,24 @@ h6 {
   max-width: 31rem;
 }
 
+.navbar-actions {
+  gap: 0.35rem;
+}
+
+.navbar-actions .nav-link {
+  min-height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .hero-section {
   min-height: calc(100vh - 5rem);
   display: flex;
@@ -439,6 +457,10 @@ h6 {
 
 .product-image {
   height: 14rem;
+}
+
+.wishlist-image {
+  height: 13.75rem;
 }
 
 .products-header {
@@ -863,6 +885,10 @@ h6 {
   border-color: var(--border);
 }
 
+.cart-image {
+  aspect-ratio: 1;
+}
+
 .quantity-control {
   display: inline-flex;
   align-items: center;
@@ -1111,6 +1137,33 @@ h6 {
 }
 
 @media (max-width: 991.98px) {
+  .app-navbar .navbar-collapse {
+    padding-top: 1rem;
+  }
+
+  .navbar-actions {
+    align-items: stretch !important;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+  }
+
+  .navbar-actions .nav-item {
+    width: 100%;
+    margin-inline: 0 !important;
+  }
+
+  .navbar-actions .nav-link,
+  .navbar-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .navbar-actions .nav-link.position-relative {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(var(--primary-rgb), 0.05);
+  }
+
   .search-pill {
     width: 100% !important;
     max-width: none;
@@ -1150,6 +1203,11 @@ h6 {
   .notification-meta {
     justify-items: start;
   }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -1163,10 +1221,6 @@ h6 {
 
   .hero-media {
     min-height: 17rem;
-  }
-
-  .btn {
-    width: 100%;
   }
 
   .theme-toggle {
@@ -1198,5 +1252,40 @@ h6 {
   .notification-meta,
   .notification-meta .btn {
     width: 100%;
+  }
+
+  .auth-shell {
+    align-items: flex-start;
+    padding: 2rem 0;
+  }
+
+  .auth-panel .card-body {
+    padding: 1.5rem !important;
+  }
+
+  .page-header .badge {
+    align-self: flex-start;
+  }
+
+  .cart-table {
+    min-width: 640px;
+  }
+
+  .quantity-control {
+    gap: 0.4rem;
+  }
+
+  .quantity-control .btn {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .empty-state {
+    padding: 3rem 1.25rem;
+  }
+
+  .empty-illustration {
+    width: 5.5rem;
+    height: 5.5rem;
   }
 }

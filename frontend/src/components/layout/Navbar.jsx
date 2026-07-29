@@ -100,7 +100,7 @@ function Navbar() {
 
           </form>
 
-          <ul className="navbar-nav ms-auto align-items-center">
+          <ul className="navbar-nav navbar-actions ms-auto align-items-center">
 
             <li className="nav-item mx-2">
               <Link
