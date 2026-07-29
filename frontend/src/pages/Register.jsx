@@ -8,9 +8,12 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { registerUser } from "../services/authService";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useToast } from "../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -22,6 +25,7 @@ function Register() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -35,20 +39,26 @@ function Register() {
 
     setError("");
     setSuccess("");
+    setIsSubmitting(true);
 
     try {
       const response = await registerUser(formData);
 
       setSuccess(response.message);
+      showToast(response.message || "Registration successful.", "success");
 
       setTimeout(() => {
         navigate("/login");
       }, 1500);
     } catch (err) {
-      setError(
+      const message =
         err.response?.data?.message ||
-        "Registration failed. Please try again."
-      );
+        "Registration failed. Please try again.";
+
+      setError(message);
+      showToast(message, "danger");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -193,8 +203,13 @@ function Register() {
                       <button
                         type="submit"
                         className="btn btn-success w-100 ripple"
+                        disabled={isSubmitting}
                       >
-                        Register
+                        {isSubmitting ? (
+                          <LoadingSpinner text="Creating account" />
+                        ) : (
+                          "Register"
+                        )}
                       </button>
                     </form>
 

@@ -9,23 +9,33 @@ import {
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { logoutUser } from "../../services/authService";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { useState } from "react";
 
 function Navbar() {
   const { user, token, logout } = useAuth();
+  const { showToast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
+
     try {
       if (token) {
         await logoutUser(token);
       }
     } catch (error) {
       console.log(error);
+      showToast("Logout request failed, but your session was cleared.", "danger");
     }
 
     logout();
+    showToast("You have been logged out.", "info");
     navigate("/login");
+    setIsLoggingOut(false);
   };
 
   return (
@@ -130,9 +140,16 @@ function Navbar() {
                   <button
                     className="btn btn-danger ripple"
                     onClick={handleLogout}
+                    disabled={isLoggingOut}
                   >
-                    <FaSignOutAlt className="me-2" />
-                    Logout
+                    {isLoggingOut ? (
+                      <LoadingSpinner text="Logging out" />
+                    ) : (
+                      <>
+                        <FaSignOutAlt className="me-2" />
+                        Logout
+                      </>
+                    )}
                   </button>
 
                 </li>

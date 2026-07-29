@@ -3,31 +3,41 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEnvelope, FaLock, FaShoppingBag, FaUser } from "react-icons/fa";
 import { loginUser } from "../services/authService";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useToast } from "../context/ToastContext";
 
 function Login() {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     setError("");
+    setIsSubmitting(true);
 
     try {
       const response = await loginUser(email, password);
 
       login(response.user, response.token);
+      showToast("Login successful. Welcome back!", "success");
 
       navigate("/dashboard");
     } catch (err) {
-      setError(
+      const message =
         err.response?.data?.message ||
-        "Login failed."
-      );
+        "Login failed.";
+
+      setError(message);
+      showToast(message, "danger");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,8 +113,13 @@ function Login() {
                       <button
                         type="submit"
                         className="btn btn-primary w-100 ripple"
+                        disabled={isSubmitting}
                       >
-                        Login
+                        {isSubmitting ? (
+                          <LoadingSpinner text="Logging in" />
+                        ) : (
+                          "Login"
+                        )}
                       </button>
                     </form>
 
