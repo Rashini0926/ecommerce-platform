@@ -4,6 +4,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
@@ -11,23 +13,21 @@ import Products from "./pages/Products";
 import Notifications from "./pages/Notifications";
 import SellerDashboard from "./pages/SellerDashboard";
 import ThemeToggle from "./components/layout/ThemeToggle";
-
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 function App() {
   return (
     <>
       <ThemeToggle />
-
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
-
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
-
         <Route path="/products" element={<Products />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
 
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
