@@ -6,6 +6,7 @@ import {
   FaUser,
   FaStore,
   FaSignOutAlt,
+  FaBell,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
@@ -107,6 +108,19 @@ function Navbar() {
                 to="/products"
               >
                 Products
+              </Link>
+            </li>
+
+            <li className="nav-item mx-2">
+              <Link
+                className="nav-link position-relative"
+                to="/notifications"
+                aria-label="Notifications"
+              >
+                <FaBell />
+                <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">
+                  4
+                </span>
               </Link>
             </li>
 

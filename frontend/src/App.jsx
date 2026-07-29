@@ -8,6 +8,7 @@ import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
 import Products from "./pages/Products";
+import Notifications from "./pages/Notifications";
 import ThemeToggle from "./components/layout/ThemeToggle";
 
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -58,6 +59,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Cart />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
             </ProtectedRoute>
           }
         />
