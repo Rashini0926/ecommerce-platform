@@ -7,6 +7,7 @@ import {
   FaStore,
   FaSignOutAlt,
   FaBell,
+  FaChartLine,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
@@ -21,6 +22,7 @@ function Navbar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const isSeller = user?.role === "seller" || user?.role === "admin";
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -152,6 +154,20 @@ function Navbar() {
 
             {user ? (
               <>
+
+                {isSeller && (
+                  <li className="nav-item mx-2">
+
+                    <Link
+                      className="btn btn-outline-success"
+                      to="/seller/dashboard"
+                    >
+                      <FaChartLine className="me-2" />
+                      Seller
+                    </Link>
+
+                  </li>
+                )}
 
                 <li className="nav-item mx-2">
 
