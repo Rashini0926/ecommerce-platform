@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
+import Products from "./pages/Products";
 import ThemeToggle from "./components/layout/ThemeToggle";
 
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -22,6 +23,8 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/register" element={<Register />} />
+
+        <Route path="/products" element={<Products />} />
 
         <Route
           path="/dashboard"

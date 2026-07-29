@@ -18,6 +18,7 @@ function Navbar() {
   const { user, token, logout } = useAuth();
   const { showToast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -36,6 +37,18 @@ function Navbar() {
     showToast("You have been logged out.", "info");
     navigate("/login");
     setIsLoggingOut(false);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const trimmedSearchTerm = searchTerm.trim();
+
+    if (trimmedSearchTerm) {
+      navigate(`/products?search=${encodeURIComponent(trimmedSearchTerm)}`);
+    } else {
+      navigate("/products");
+    }
   };
 
   return (
@@ -67,11 +80,13 @@ function Navbar() {
           id="navbarMenu"
         >
 
-          <form className="d-flex mx-auto w-50 search-pill">
+          <form className="d-flex mx-auto w-50 search-pill" onSubmit={handleSearch}>
 
             <input
               className="form-control"
               placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             <button
