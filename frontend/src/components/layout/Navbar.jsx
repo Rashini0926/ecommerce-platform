@@ -6,26 +6,52 @@ import {
   FaUser,
   FaStore,
   FaSignOutAlt,
+  FaBell,
+  FaChartLine,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { logoutUser } from "../../services/authService";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { useState } from "react";
 
 function Navbar() {
   const { user, token, logout } = useAuth();
+  const { showToast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const isSeller = user?.role === "seller" || user?.role === "admin";
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
+
     try {
       if (token) {
         await logoutUser(token);
       }
     } catch (error) {
       console.log(error);
+      showToast("Logout request failed, but your session was cleared.", "danger");
     }
 
     logout();
+    showToast("You have been logged out.", "info");
     navigate("/login");
+    setIsLoggingOut(false);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const trimmedSearchTerm = searchTerm.trim();
+
+    if (trimmedSearchTerm) {
+      navigate(`/products?search=${encodeURIComponent(trimmedSearchTerm)}`);
+    } else {
+      navigate("/products");
+    }
   };
 
   return (
@@ -57,11 +83,13 @@ function Navbar() {
           id="navbarMenu"
         >
 
-          <form className="d-flex mx-auto w-50 search-pill">
+          <form className="d-flex mx-auto w-50 search-pill" onSubmit={handleSearch}>
 
             <input
               className="form-control"
               placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             <button
@@ -74,7 +102,7 @@ function Navbar() {
 
           </form>
 
-          <ul className="navbar-nav ms-auto align-items-center">
+          <ul className="navbar-nav navbar-actions ms-auto align-items-center">
 
             <li className="nav-item mx-2">
               <Link
@@ -82,6 +110,19 @@ function Navbar() {
                 to="/products"
               >
                 Products
+              </Link>
+            </li>
+
+            <li className="nav-item mx-2">
+              <Link
+                className="nav-link position-relative"
+                to="/notifications"
+                aria-label="Notifications"
+              >
+                <FaBell />
+                <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">
+                  4
+                </span>
               </Link>
             </li>
 
@@ -114,6 +155,20 @@ function Navbar() {
             {user ? (
               <>
 
+                {isSeller && (
+                  <li className="nav-item mx-2">
+
+                    <Link
+                      className="btn btn-outline-success"
+                      to="/seller/dashboard"
+                    >
+                      <FaChartLine className="me-2" />
+                      Seller
+                    </Link>
+
+                  </li>
+                )}
+
                 <li className="nav-item mx-2">
 
                   <Link
@@ -130,9 +185,16 @@ function Navbar() {
                   <button
                     className="btn btn-danger ripple"
                     onClick={handleLogout}
+                    disabled={isLoggingOut}
                   >
-                    <FaSignOutAlt className="me-2" />
-                    Logout
+                    {isLoggingOut ? (
+                      <LoadingSpinner text="Logging out" />
+                    ) : (
+                      <>
+                        <FaSignOutAlt className="me-2" />
+                        Logout
+                      </>
+                    )}
                   </button>
 
                 </li>

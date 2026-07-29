@@ -30,7 +30,7 @@ function Wishlist() {
       <Navbar />
 
       <main className="container py-5">
-        <div className="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div className="page-header mb-4">
           <div>
             <span className="section-kicker">Saved products</span>
             <h2 className="mb-0 mt-2">

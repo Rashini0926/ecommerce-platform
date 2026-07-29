@@ -1,34 +1,21 @@
 import { Link } from "react-router-dom";
-import {
-  FaHeart,
-  FaShoppingBag,
-  FaShoppingCart,
-} from "react-icons/fa";
 
 function SummaryCard({
   title,
   value,
-  color,
+  description,
+  icon,
+  color = "primary",
+  link,
+  linkLabel = "View Details",
 }) {
-  const icons = {
-    Orders: <FaShoppingBag />,
-    Wishlist: <FaHeart />,
-    Cart: <FaShoppingCart />,
-  };
-
-  const links = {
-    Orders: "/dashboard",
-    Wishlist: "/wishlist",
-    Cart: "/cart",
-  };
-
   return (
-    <div className="col-md-4">
-      <div className="card stat-card hover-lift card-hover-shadow h-100">
+    <div className="col-sm-6 col-xl-3">
+      <div className="card stat-card dashboard-summary-card h-100">
         <div className="card-body p-4">
-          <div className="d-flex align-items-center justify-content-between mb-4">
-            <div className={`icon-circle fs-3 text-${color}`}>
-              {icons[title]}
+          <div className="d-flex align-items-start justify-content-between gap-3 mb-4">
+            <div className={`dashboard-stat-icon dashboard-stat-icon-${color}`}>
+              {icon}
             </div>
 
             <span className={`badge badge-soft-${color}`}>
@@ -36,15 +23,19 @@ function SummaryCard({
             </span>
           </div>
 
-          <p className="text-muted mb-1">{title}</p>
-          <h2 className={`text-${color} mb-3`}>{value}</h2>
+          <p className="text-muted fw-bold mb-1">{title}</p>
+          <h2 className={`text-${color} mb-2`}>{value}</h2>
+          <p className="text-muted small mb-4">{description}</p>
 
-          <Link
-            to={links[title]}
-            className={`btn btn-outline-${color} w-100`}
-          >
-            View Details
-          </Link>
+          {link ? (
+            <Link to={link} className={`btn btn-outline-${color} w-100`}>
+              {linkLabel}
+            </Link>
+          ) : (
+            <button type="button" className={`btn btn-outline-${color} w-100`}>
+              {linkLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

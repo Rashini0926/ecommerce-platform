@@ -1,262 +1,384 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  FaCartPlus,
+  FaFilter,
+  FaHeart,
+  FaRegStar,
+  FaSearch,
+  FaSlidersH,
+  FaStar,
+} from "react-icons/fa";
+import Footer from "../components/layout/Footer";
+import Navbar from "../components/layout/Navbar";
+
+const products = [
+  {
+    id: 1,
+    name: "Wireless Headphones",
+    category: "Electronics",
+    price: 8500,
+    rating: 4.8,
+    reviews: 128,
+    tag: "Best seller",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 2,
+    name: "Smart Watch",
+    category: "Electronics",
+    price: 12000,
+    rating: 4.6,
+    reviews: 92,
+    tag: "New arrival",
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 3,
+    name: "Laptop Backpack",
+    category: "Fashion",
+    price: 4500,
+    rating: 4.4,
+    reviews: 74,
+    tag: "Top rated",
+    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 4,
+    name: "Bluetooth Speaker",
+    category: "Electronics",
+    price: 6000,
+    rating: 4.5,
+    reviews: 88,
+    tag: "Flash deal",
+    image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 5,
+    name: "Cotton Casual Shirt",
+    category: "Fashion",
+    price: 3200,
+    rating: 4.3,
+    reviews: 56,
+    tag: "Popular",
+    image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 6,
+    name: "Ceramic Dinner Set",
+    category: "Home & Living",
+    price: 7200,
+    rating: 4.7,
+    reviews: 61,
+    tag: "Limited stock",
+    image: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 7,
+    name: "Skincare Gift Box",
+    category: "Beauty",
+    price: 5600,
+    rating: 4.5,
+    reviews: 43,
+    tag: "Gift pick",
+    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80",
+  },
+  {
+    id: 8,
+    name: "Fitness Yoga Mat",
+    category: "Sports",
+    price: 2800,
+    rating: 4.2,
+    reviews: 39,
+    tag: "Value deal",
+    image: "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=700&q=80",
+  },
+];
+
+const categories = [
+  "All",
+  "Electronics",
+  "Fashion",
+  "Home & Living",
+  "Beauty",
+  "Sports",
+];
+
+const priceRanges = [
+  { label: "All prices", min: 0, max: Infinity },
+  { label: "Under Rs. 5,000", min: 0, max: 5000 },
+  { label: "Rs. 5,000 - Rs. 10,000", min: 5000, max: 10000 },
+  { label: "Above Rs. 10,000", min: 10000, max: Infinity },
+];
+
+function formatPrice(price) {
+  return `Rs. ${price.toLocaleString("en-LK")}`;
+}
 
 function Products() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [brand, setBrand] = useState('');
-  const [color, setColor] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
 
-  const fetchProducts = () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (brand) params.append('brand', brand);
-    if (color) params.append('color', color);
-    if (minPrice) params.append('min_price', minPrice);
-    if (maxPrice) params.append('max_price', maxPrice);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedPriceRange, setSelectedPriceRange] = useState("All prices");
+  const [sortOrder, setSortOrder] = useState("featured");
 
-    fetch(`http://127.0.0.1:8000/api/products?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load products:', err);
-        setLoading(false);
-      });
-  };
+  const filteredProducts = useMemo(() => {
+    const activePriceRange =
+      priceRanges.find((range) => range.label === selectedPriceRange) ||
+      priceRanges[0];
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+    const filteredItems = products.filter((product) => {
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "All" || product.category === selectedCategory;
+      const matchesPrice =
+        product.price >= activePriceRange.min &&
+        product.price <= activePriceRange.max;
 
-  const handleFilter = (e) => {
+      return matchesSearch && matchesCategory && matchesPrice;
+    });
+
+    return [...filteredItems].sort((firstProduct, secondProduct) => {
+      if (sortOrder === "price-low") {
+        return firstProduct.price - secondProduct.price;
+      }
+
+      if (sortOrder === "price-high") {
+        return secondProduct.price - firstProduct.price;
+      }
+
+      if (sortOrder === "rating") {
+        return secondProduct.rating - firstProduct.rating;
+      }
+
+      return firstProduct.id - secondProduct.id;
+    });
+  }, [searchTerm, selectedCategory, selectedPriceRange, sortOrder]);
+
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchProducts();
+
+    const trimmedSearchTerm = searchTerm.trim();
+
+    if (trimmedSearchTerm) {
+      setSearchParams({ search: trimmedSearchTerm });
+    } else {
+      setSearchParams({});
+    }
   };
 
   const clearFilters = () => {
-    setSearch('');
-    setBrand('');
-    setColor('');
-    setMinPrice('');
-    setMaxPrice('');
-    setTimeout(fetchProducts, 0);
-  };
-
-  const inputStyle = {
-    fontSize: '13.5px',
-    padding: '9px 12px',
-    borderRadius: '8px',
-    border: '1px solid #e5e7eb',
+    setSearchTerm("");
+    setSelectedCategory("All");
+    setSelectedPriceRange("All prices");
+    setSortOrder("featured");
+    setSearchParams({});
   };
 
   return (
-    <div style={{ background: '#fafbfc', minHeight: '100vh' }}>
-      <div className="container py-5">
-        <div className="row g-4">
-          {/* Filter Sidebar */}
-          <div className="col-lg-3">
-            <form
-              onSubmit={handleFilter}
-              style={{
-                background: '#ffffff',
-                border: '1px solid #eef0f3',
-                borderRadius: '14px',
-                padding: '22px',
-                position: 'sticky',
-                top: '20px',
-              }}
-            >
-              <h6 className="fw-bold mb-4" style={{ fontSize: '15px', letterSpacing: '0.02em' }}>
-                FILTERS
-              </h6>
+    <div className="app-page">
+      <Navbar />
 
-              <div className="mb-3">
-                <label className="d-block mb-2" style={{ fontSize: '12.5px', color: '#6b7280', fontWeight: 500 }}>
-                  Search
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  style={inputStyle}
-                  placeholder="Search products..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="d-block mb-2" style={{ fontSize: '12.5px', color: '#6b7280', fontWeight: 500 }}>
-                  Brand
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  style={inputStyle}
-                  placeholder="e.g. Apple"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="d-block mb-2" style={{ fontSize: '12.5px', color: '#6b7280', fontWeight: 500 }}>
-                  Color
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  style={inputStyle}
-                  placeholder="e.g. Black"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="d-block mb-2" style={{ fontSize: '12.5px', color: '#6b7280', fontWeight: 500 }}>
-                  Price Range
-                </label>
-                <div className="d-flex gap-2">
-                  <input
-                    type="number"
-                    className="form-control"
-                    style={inputStyle}
-                    placeholder="Min"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    className="form-control"
-                    style={inputStyle}
-                    placeholder="Max"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-100 mb-2"
-                style={{
-                  background: '#2563eb',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  fontSize: '13.5px',
-                  fontWeight: 600,
-                  transition: 'background 0.2s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#1d4ed8')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#2563eb')}
-              >
-                Apply Filters
-              </button>
-              <button
-                type="button"
-                className="w-100"
-                style={{
-                  background: 'transparent',
-                  color: '#6b7280',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  fontSize: '13.5px',
-                  fontWeight: 500,
-                }}
-                onClick={clearFilters}
-              >
-                Clear all
-              </button>
-            </form>
+      <main className="container py-5">
+        <div className="products-header mb-4">
+          <div>
+            <span className="section-kicker">Browse products</span>
+            <h1 className="mt-2 mb-2">Find Your Next Favorite Item</h1>
+            <p className="text-muted mb-0">
+              Search products, compare prices, and filter by shopping category.
+            </p>
           </div>
 
-          {/* Product Grid */}
+          <span className="badge badge-soft-primary">
+            {filteredProducts.length} products found
+          </span>
+        </div>
+
+        <div className="row g-4">
+          <div className="col-lg-3">
+            <aside className="card glass-card product-filter-panel">
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between mb-4">
+                  <h5 className="mb-0">
+                    <FaSlidersH className="me-2 text-primary" />
+                    Filters
+                  </h5>
+
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={clearFilters}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <form onSubmit={handleSearchSubmit}>
+                  <label className="form-label fw-bold">Search</label>
+                  <div className="input-group mb-4">
+                    <span className="input-group-text">
+                      <FaSearch />
+                    </span>
+
+                    <input
+                      type="search"
+                      className="form-control"
+                      placeholder="Product name"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+
+                  <button type="submit" className="btn btn-primary w-100 mb-4">
+                    <FaFilter className="me-2" />
+                    Apply Search
+                  </button>
+                </form>
+
+                <label className="form-label fw-bold">Category</label>
+                <select
+                  className="form-select mb-4"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  {categories.map((category) => (
+                    <option value={category} key={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="form-label fw-bold">Price Range</label>
+                <select
+                  className="form-select"
+                  value={selectedPriceRange}
+                  onChange={(e) => setSelectedPriceRange(e.target.value)}
+                >
+                  {priceRanges.map((range) => (
+                    <option value={range.label} key={range.label}>
+                      {range.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </aside>
+          </div>
+
           <div className="col-lg-9">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h4 className="fw-bold mb-0" style={{ fontSize: '22px' }}>
-                {loading ? 'Loading...' : `${products.length} Products`}
-              </h4>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+              <p className="text-muted mb-0">
+                Showing {filteredProducts.length} of {products.length} products
+              </p>
+
+              <select
+                className="form-select product-sort-select"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                aria-label="Sort products"
+              >
+                <option value="featured">Sort by featured</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+                <option value="rating">Highest rated</option>
+              </select>
             </div>
 
-            {!loading && products.length === 0 && (
-              <div
-                className="text-center py-5"
-                style={{ background: '#fff', borderRadius: '14px', border: '1px solid #eef0f3' }}
-              >
-                <p className="text-muted mb-0">No products match your filters.</p>
-              </div>
-            )}
+            {filteredProducts.length === 0 ? (
+              <div className="card glass-card empty-state">
+                <div className="empty-illustration mb-4">
+                  <FaSearch size={42} />
+                </div>
 
-            <div className="row g-4">
-              {products.map((product) => (
-                <div className="col-md-4" key={product.id}>
-                  <Link
-                    to={`/products/${product.id}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <div
-                      style={{
-                        background: '#fff',
-                        border: '1px solid #eef0f3',
-                        borderRadius: '14px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                        height: '100%',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-6px)';
-                        e.currentTarget.style.boxShadow = '0 20px 32px rgba(0,0,0,0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <div style={{ background: '#f7f8fa', height: '210px' }}>
+                <h4>No products found.</h4>
+                <p className="text-muted">
+                  Try changing your search keyword, category, or price range.
+                </p>
+
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={clearFilters}
+                >
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <div className="row g-4">
+                {filteredProducts.map((product) => (
+                  <div className="col-md-6 col-xl-4" key={product.id}>
+                    <div className="card product-card hover-lift card-hover-shadow h-100">
+                      <div className="product-image-wrap">
                         <img
                           src={product.image}
+                          className="product-image"
                           alt={product.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       </div>
-                      <div style={{ padding: '18px' }}>
-                        <p
-                          className="mb-1"
-                          style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500, letterSpacing: '0.03em' }}
-                        >
-                          {product.brand?.toUpperCase()}
+
+                      <div className="card-body d-flex flex-column">
+                        <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+                          <span className="badge badge-soft-accent">
+                            {product.tag}
+                          </span>
+
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger product-icon-button"
+                            aria-label={`Add ${product.name} to wishlist`}
+                          >
+                            <FaHeart />
+                          </button>
+                        </div>
+
+                        <p className="text-muted small fw-bold mb-1">
+                          {product.category}
                         </p>
-                        <h6 className="mb-3" style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>
-                          {product.name}
-                        </h6>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span style={{ fontSize: '17px', fontWeight: 700, color: '#2563eb' }}>
-                            ${product.price}
+
+                        <h5 className="product-title">{product.name}</h5>
+
+                        <div className="product-rating mb-2">
+                          <FaStar />
+                          <FaStar />
+                          <FaStar />
+                          <FaStar />
+                          <FaRegStar />
+                          <span>
+                            {product.rating} ({product.reviews})
                           </span>
-                          <span style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 500 }}>
-                            ★ {product.rating}
-                          </span>
+                        </div>
+
+                        <p className="text-primary fw-bold fs-5 mb-4">
+                          {formatPrice(product.price)}
+                        </p>
+
+                        <div className="d-grid gap-2 mt-auto">
+                          <button className="btn btn-primary ripple">
+                            <FaCartPlus className="me-2" />
+                            Add to Cart
+                          </button>
+
+                          <Link
+                            className="btn btn-outline-primary"
+                            to={`/products/${product.id}`}
+                          >
+                            View Details
+                          </Link>
                         </div>
                       </div>
                     </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

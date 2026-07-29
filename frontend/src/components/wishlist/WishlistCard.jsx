@@ -8,7 +8,6 @@ function WishlistCard({ product }) {
           src={product.image}
           alt={product.name}
           className="wishlist-image"
-          style={{ height: "220px", objectFit: "cover" }}
         />
 
         <span className="badge bg-danger position-absolute top-0 start-0 m-3">
