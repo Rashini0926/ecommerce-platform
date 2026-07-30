@@ -1328,6 +1328,23 @@ h6 {
   min-height: 100%;
   color: #ffffff;
   background: var(--gradient-primary);
+  transition: background 0.4s ease;
+}
+
+.auth-side-customer {
+  background: var(--gradient-primary) !important;
+}
+
+.auth-side-seller {
+  background: linear-gradient(135deg, #16a34a 0%, #059669 100%) !important;
+}
+
+.auth-side-admin {
+  background: linear-gradient(135deg, #0f172a 0%, #dc2626 100%) !important;
+}
+
+.role-pill-bar {
+  backdrop-filter: blur(12px);
 }
 
 .auth-side h1,
