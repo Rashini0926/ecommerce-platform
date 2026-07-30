@@ -8,6 +8,7 @@ import {
   FaSignOutAlt,
   FaBell,
   FaChartLine,
+  FaShieldAlt,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
@@ -23,6 +24,7 @@ function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const isSeller = user?.role === "seller" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -154,6 +156,18 @@ function Navbar() {
 
             {user ? (
               <>
+
+                {isAdmin && (
+                  <li className="nav-item mx-2">
+                    <Link
+                      className="btn btn-outline-danger"
+                      to="/admin/dashboard"
+                    >
+                      <FaShieldAlt className="me-2" />
+                      Admin
+                    </Link>
+                  </li>
+                )}
 
                 {isSeller && (
                   <li className="nav-item mx-2">

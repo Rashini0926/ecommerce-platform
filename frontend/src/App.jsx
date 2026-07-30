@@ -9,9 +9,10 @@ import ProductDetails from "./pages/ProductDetails";
 import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
-import Products from "./pages/Products";
+
 import Notifications from "./pages/Notifications";
 import SellerDashboard from "./pages/SellerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import ThemeToggle from "./components/layout/ThemeToggle";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
@@ -78,6 +79,15 @@ function App() {
           element={
             <ProtectedRoute>
               <SellerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
