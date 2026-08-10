@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaCreditCard, FaRegSadTear, FaShoppingCart, FaTruck } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import {
+  FaCreditCard,
+  FaRegSadTear,
+  FaShoppingCart,
+  FaTruck,
+} from "react-icons/fa";
+
 import CartItem from "../components/cart/CartItem";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
+
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+
 import {
   getCart,
   removeFromCart,
@@ -40,30 +49,41 @@ function Cart() {
     if (token) {
       loadCart();
     }
-  }, [showToast, token]);
+  }, [token, showToast]);
 
   const subtotal = useMemo(
     () =>
       cart.reduce(
-        (sum, item) => sum + Number(item.product?.price || 0) * item.quantity,
+        (sum, item) =>
+          sum + Number(item.product?.price || 0) * item.quantity,
         0
       ),
     [cart]
   );
 
   const handleQuantityChange = async (item, quantity) => {
+    if (quantity < 1) return;
+
     setProcessingId(item.id);
 
     try {
-      const response = await updateCartItem(token, item.id, quantity);
+      const response = await updateCartItem(
+        token,
+        item.id,
+        quantity
+      );
+
       setCart((currentItems) =>
         currentItems.map((cartItem) =>
-          cartItem.id === item.id ? response.item : cartItem
+          cartItem.id === item.id
+            ? response.item
+            : cartItem
         )
       );
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to update cart item.",
+        error.response?.data?.message ||
+          "Failed to update cart item.",
         "danger"
       );
     } finally {
@@ -76,13 +96,18 @@ function Cart() {
 
     try {
       await removeFromCart(token, cartItemId);
+
       setCart((currentItems) =>
-        currentItems.filter((item) => item.id !== cartItemId)
+        currentItems.filter(
+          (item) => item.id !== cartItemId
+        )
       );
+
       showToast("Cart item removed.", "info");
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to remove cart item.",
+        error.response?.data?.message ||
+          "Failed to remove cart item.",
         "danger"
       );
     } finally {
@@ -97,7 +122,10 @@ function Cart() {
       <main className="container py-5">
         <div className="page-header mb-4">
           <div>
-            <span className="section-kicker">Review your order</span>
+            <span className="section-kicker">
+              Review your order
+            </span>
+
             <h2 className="mb-0 mt-2">
               <FaShoppingCart className="me-2 text-primary" />
               Shopping Cart
@@ -111,7 +139,7 @@ function Cart() {
 
         {isLoading ? (
           <div className="card glass-card empty-state">
-            <LoadingSpinner text="Loading cart" />
+            <LoadingSpinner text="Loading cart..." />
           </div>
         ) : cart.length === 0 ? (
           <div className="card glass-card empty-state">
@@ -120,8 +148,10 @@ function Cart() {
             </div>
 
             <h4>Your cart is empty.</h4>
+
             <p className="text-muted">
-              Add products to your cart and continue checkout when ready.
+              Add products to your cart and continue
+              checkout when ready.
             </p>
           </div>
         ) : (
@@ -147,12 +177,20 @@ function Cart() {
                           <CartItem
                             key={item.id}
                             item={item}
-                            isProcessing={processingId === item.id}
+                            isProcessing={
+                              processingId === item.id
+                            }
                             onDecrease={(cartItem) =>
-                              handleQuantityChange(cartItem, cartItem.quantity - 1)
+                              handleQuantityChange(
+                                cartItem,
+                                cartItem.quantity - 1
+                              )
                             }
                             onIncrease={(cartItem) =>
-                              handleQuantityChange(cartItem, cartItem.quantity + 1)
+                              handleQuantityChange(
+                                cartItem,
+                                cartItem.quantity + 1
+                              )
                             }
                             onRemove={handleRemove}
                           />
@@ -167,11 +205,18 @@ function Cart() {
             <div className="col-lg-4">
               <div className="card glass-card order-summary">
                 <div className="card-body p-4">
-                  <h4 className="mb-4">Order Summary</h4>
+                  <h4 className="mb-4">
+                    Order Summary
+                  </h4>
 
                   <div className="d-flex justify-content-between mb-3">
-                    <span className="text-muted">Subtotal</span>
-                    <strong>Rs. {subtotal.toLocaleString()}</strong>
+                    <span className="text-muted">
+                      Subtotal
+                    </span>
+
+                    <strong>
+                      Rs. {subtotal.toLocaleString()}
+                    </strong>
                   </div>
 
                   <div className="d-flex justify-content-between mb-3">
@@ -179,22 +224,29 @@ function Cart() {
                       <FaTruck className="me-2 text-success" />
                       Delivery
                     </span>
-                    <strong>Calculated at checkout</strong>
+
+                    <strong>
+                      Calculated at checkout
+                    </strong>
                   </div>
 
                   <hr />
 
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <h5 className="mb-0">Total</h5>
+
                     <h4 className="text-primary mb-0">
                       Rs. {subtotal.toLocaleString()}
                     </h4>
                   </div>
 
-                  <button className="btn btn-success w-100 ripple pulse-button">
+                  <Link
+                    to="/checkout"
+                    className="btn btn-success w-100"
+                  >
                     <FaCreditCard className="me-2" />
                     Proceed to Checkout
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
