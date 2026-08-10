@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\WishlistController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -18,6 +20,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::post('/wishlist', [WishlistController::class, 'store']);
+    Route::delete('/wishlist/{wishlistItem}', [WishlistController::class, 'destroy']);
+
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::patch('/cart/{cartItem}', [CartController::class, 'update']);
+    Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
 
 });
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   FaCartPlus,
@@ -9,155 +9,103 @@ import {
   FaSlidersH,
   FaStar,
 } from "react-icons/fa";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
-
-const products = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    price: 8500,
-    rating: 4.8,
-    reviews: 128,
-    tag: "Best seller",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 2,
-    name: "Smart Watch",
-    category: "Electronics",
-    price: 12000,
-    rating: 4.6,
-    reviews: 92,
-    tag: "New arrival",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 3,
-    name: "Laptop Backpack",
-    category: "Fashion",
-    price: 4500,
-    rating: 4.4,
-    reviews: 74,
-    tag: "Top rated",
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 4,
-    name: "Bluetooth Speaker",
-    category: "Electronics",
-    price: 6000,
-    rating: 4.5,
-    reviews: 88,
-    tag: "Flash deal",
-    image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 5,
-    name: "Cotton Casual Shirt",
-    category: "Fashion",
-    price: 3200,
-    rating: 4.3,
-    reviews: 56,
-    tag: "Popular",
-    image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 6,
-    name: "Ceramic Dinner Set",
-    category: "Home & Living",
-    price: 7200,
-    rating: 4.7,
-    reviews: 61,
-    tag: "Limited stock",
-    image: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 7,
-    name: "Skincare Gift Box",
-    category: "Beauty",
-    price: 5600,
-    rating: 4.5,
-    reviews: 43,
-    tag: "Gift pick",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 8,
-    name: "Fitness Yoga Mat",
-    category: "Sports",
-    price: 2800,
-    rating: 4.2,
-    reviews: 39,
-    tag: "Value deal",
-    image: "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=700&q=80",
-  },
-];
-
-const categories = [
-  "All",
-  "Electronics",
-  "Fashion",
-  "Home & Living",
-  "Beauty",
-  "Sports",
-];
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { addToCart, addToWishlist } from "../services/customerService";
+import { getCategories, getProducts } from "../services/productService";
 
 const priceRanges = [
-  { label: "All prices", min: 0, max: Infinity },
-  { label: "Under Rs. 5,000", min: 0, max: 5000 },
+  { label: "All prices", min: "", max: "" },
+  { label: "Under Rs. 5,000", min: "", max: 5000 },
   { label: "Rs. 5,000 - Rs. 10,000", min: 5000, max: 10000 },
-  { label: "Above Rs. 10,000", min: 10000, max: Infinity },
+  { label: "Above Rs. 10,000", min: 10000, max: "" },
 ];
 
 function formatPrice(price) {
-  return `Rs. ${price.toLocaleString("en-LK")}`;
+  return `Rs. ${Number(price || 0).toLocaleString("en-LK")}`;
 }
 
 function Products() {
+  const { token } = useAuth();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
 
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPriceRange, setSelectedPriceRange] = useState("All prices");
   const [sortOrder, setSortOrder] = useState("featured");
+  const [isLoading, setIsLoading] = useState(true);
+  const [processingProductId, setProcessingProductId] = useState(null);
 
-  const filteredProducts = useMemo(() => {
-    const activePriceRange =
-      priceRanges.find((range) => range.label === selectedPriceRange) ||
-      priceRanges[0];
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await getCategories();
+        setCategories(response || []);
+      } catch (error) {
+        showToast(
+          error.response?.data?.message || "Failed to load categories.",
+          "danger"
+        );
+      }
+    };
 
-    const filteredItems = products.filter((product) => {
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        selectedCategory === "All" || product.category === selectedCategory;
-      const matchesPrice =
-        product.price >= activePriceRange.min &&
-        product.price <= activePriceRange.max;
+    loadCategories();
+  }, [showToast]);
 
-      return matchesSearch && matchesCategory && matchesPrice;
-    });
+  useEffect(() => {
+    const loadProducts = async () => {
+      const activePriceRange =
+        priceRanges.find((range) => range.label === selectedPriceRange) ||
+        priceRanges[0];
 
-    return [...filteredItems].sort((firstProduct, secondProduct) => {
+      setIsLoading(true);
+
+      try {
+        const response = await getProducts({
+          search: searchTerm || undefined,
+          category_id: selectedCategory || undefined,
+          min_price: activePriceRange.min || undefined,
+          max_price: activePriceRange.max || undefined,
+        });
+
+        setProducts(response || []);
+      } catch (error) {
+        showToast(
+          error.response?.data?.message || "Failed to load products.",
+          "danger"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [searchTerm, selectedCategory, selectedPriceRange, showToast]);
+
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((firstProduct, secondProduct) => {
       if (sortOrder === "price-low") {
-        return firstProduct.price - secondProduct.price;
+        return Number(firstProduct.price) - Number(secondProduct.price);
       }
 
       if (sortOrder === "price-high") {
-        return secondProduct.price - firstProduct.price;
+        return Number(secondProduct.price) - Number(firstProduct.price);
       }
 
       if (sortOrder === "rating") {
-        return secondProduct.rating - firstProduct.rating;
+        return Number(secondProduct.rating) - Number(firstProduct.rating);
       }
 
       return firstProduct.id - secondProduct.id;
     });
-  }, [searchTerm, selectedCategory, selectedPriceRange, sortOrder]);
+  }, [products, sortOrder]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -166,17 +114,45 @@ function Products() {
 
     if (trimmedSearchTerm) {
       setSearchParams({ search: trimmedSearchTerm });
+      setSearchTerm(trimmedSearchTerm);
     } else {
       setSearchParams({});
+      setSearchTerm("");
     }
   };
 
   const clearFilters = () => {
     setSearchTerm("");
-    setSelectedCategory("All");
+    setSelectedCategory("");
     setSelectedPriceRange("All prices");
     setSortOrder("featured");
     setSearchParams({});
+  };
+
+  const handleCustomerAction = async (productId, action) => {
+    if (!token) {
+      showToast("Please login before adding products.", "info");
+      return;
+    }
+
+    setProcessingProductId(productId);
+
+    try {
+      if (action === "wishlist") {
+        await addToWishlist(token, productId);
+        showToast("Product added to wishlist.", "success");
+      } else {
+        await addToCart(token, productId, 1);
+        showToast("Product added to cart.", "success");
+      }
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || "Action failed. Please try again.",
+        "danger"
+      );
+    } finally {
+      setProcessingProductId(null);
+    }
   };
 
   return (
@@ -194,7 +170,7 @@ function Products() {
           </div>
 
           <span className="badge badge-soft-primary">
-            {filteredProducts.length} products found
+            {sortedProducts.length} products found
           </span>
         </div>
 
@@ -245,9 +221,10 @@ function Products() {
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
+                  <option value="">All Categories</option>
                   {categories.map((category) => (
-                    <option value={category} key={category}>
-                      {category}
+                    <option value={category.id} key={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -271,7 +248,7 @@ function Products() {
           <div className="col-lg-9">
             <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
               <p className="text-muted mb-0">
-                Showing {filteredProducts.length} of {products.length} products
+                Showing {sortedProducts.length} products
               </p>
 
               <select
@@ -287,7 +264,11 @@ function Products() {
               </select>
             </div>
 
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+              <div className="card glass-card empty-state">
+                <LoadingSpinner text="Loading products" />
+              </div>
+            ) : sortedProducts.length === 0 ? (
               <div className="card glass-card empty-state">
                 <div className="empty-illustration mb-4">
                   <FaSearch size={42} />
@@ -308,12 +289,12 @@ function Products() {
               </div>
             ) : (
               <div className="row g-4">
-                {filteredProducts.map((product) => (
+                {sortedProducts.map((product) => (
                   <div className="col-md-6 col-xl-4" key={product.id}>
                     <div className="card product-card hover-lift card-hover-shadow h-100">
                       <div className="product-image-wrap">
                         <img
-                          src={product.image}
+                          src={product.image || "https://via.placeholder.com/700x500?text=Product"}
                           className="product-image"
                           alt={product.name}
                         />
@@ -322,20 +303,22 @@ function Products() {
                       <div className="card-body d-flex flex-column">
                         <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
                           <span className="badge badge-soft-accent">
-                            {product.tag}
+                            {Number(product.stock) > 0 ? "Available" : "Out of stock"}
                           </span>
 
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-danger product-icon-button"
                             aria-label={`Add ${product.name} to wishlist`}
+                            disabled={processingProductId === product.id}
+                            onClick={() => handleCustomerAction(product.id, "wishlist")}
                           >
                             <FaHeart />
                           </button>
                         </div>
 
                         <p className="text-muted small fw-bold mb-1">
-                          {product.category}
+                          {product.category?.name || "Product"}
                         </p>
 
                         <h5 className="product-title">{product.name}</h5>
@@ -347,7 +330,7 @@ function Products() {
                           <FaStar />
                           <FaRegStar />
                           <span>
-                            {product.rating} ({product.reviews})
+                            {Number(product.rating || 0).toFixed(1)}
                           </span>
                         </div>
 
@@ -356,7 +339,11 @@ function Products() {
                         </p>
 
                         <div className="d-grid gap-2 mt-auto">
-                          <button className="btn btn-primary ripple">
+                          <button
+                            className="btn btn-primary ripple"
+                            disabled={processingProductId === product.id}
+                            onClick={() => handleCustomerAction(product.id, "cart")}
+                          >
                             <FaCartPlus className="me-2" />
                             Add to Cart
                           </button>

@@ -4,17 +4,12 @@ import {
   FaCheckCircle,
   FaCog,
   FaDownload,
-  FaExclamationTriangle,
-  FaFileAlt,
   FaLock,
   FaMoneyBillWave,
-  FaSearch,
   FaServer,
   FaShieldAlt,
   FaShoppingBag,
-  FaSlidersH,
   FaStore,
-  FaTag,
   FaUserCheck,
   FaUsers,
   FaUserTimes,
@@ -110,7 +105,6 @@ function AdminDashboard() {
   const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState(null);
   const [sellersQueue, setSellersQueue] = useState(pendingSellers);
-  const [searchFilter, setSearchFilter] = useState("");
 
   const triggerToast = (msg) => {
     setToastMessage(msg);

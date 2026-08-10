@@ -32,4 +32,14 @@ class Product extends Model
     {
         return $this->belongsTo(Subcategory::class);
     }
+
+    public function wishlistItems()
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
+
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }

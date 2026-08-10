@@ -1,29 +1,85 @@
+import { useEffect, useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import WishlistCard from "../components/wishlist/WishlistCard";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import {
+  addToCart,
+  getWishlist,
+  removeFromWishlist,
+} from "../services/customerService";
 
 function Wishlist() {
-  const wishlist = [
-    {
-      id: 1,
-      name: "Wireless Headphones",
-      price: 12990,
-      image: "https://picsum.photos/400/300?random=1",
-    },
-    {
-      id: 2,
-      name: "Gaming Mouse",
-      price: 5990,
-      image: "https://picsum.photos/400/300?random=2",
-    },
-    {
-      id: 3,
-      name: "Smart Watch",
-      price: 18990,
-      image: "https://picsum.photos/400/300?random=3",
-    },
-  ];
+  const { token } = useAuth();
+  const { showToast } = useToast();
+
+  const [wishlist, setWishlist] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      setIsLoading(true);
+
+      try {
+        const response = await getWishlist(token);
+        setWishlist(response.items || []);
+      } catch (error) {
+        showToast(
+          error.response?.data?.message || "Failed to load wishlist.",
+          "danger"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (token) {
+      loadWishlist();
+    }
+  }, [showToast, token]);
+
+  const handleRemove = async (wishlistItemId) => {
+    setProcessingId(wishlistItemId);
+
+    try {
+      await removeFromWishlist(token, wishlistItemId);
+      setWishlist((currentItems) =>
+        currentItems.filter((item) => item.id !== wishlistItemId)
+      );
+      showToast("Product removed from wishlist.", "info");
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || "Failed to remove wishlist item.",
+        "danger"
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleMoveToCart = async (item) => {
+    setProcessingId(item.id);
+
+    try {
+      await addToCart(token, item.product_id, 1);
+      await removeFromWishlist(token, item.id);
+      setWishlist((currentItems) =>
+        currentItems.filter((wishlistItem) => wishlistItem.id !== item.id)
+      );
+      showToast("Product moved to cart.", "success");
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || "Failed to move product to cart.",
+        "danger"
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   return (
     <div className="app-page">
@@ -44,7 +100,11 @@ function Wishlist() {
           </span>
         </div>
 
-        {wishlist.length === 0 ? (
+        {isLoading ? (
+          <div className="card glass-card empty-state">
+            <LoadingSpinner text="Loading wishlist" />
+          </div>
+        ) : wishlist.length === 0 ? (
           <div className="card glass-card empty-state">
             <div className="empty-illustration mb-4">
               <FaRegHeart size={42} />
@@ -57,12 +117,17 @@ function Wishlist() {
           </div>
         ) : (
           <div className="row g-4">
-            {wishlist.map((product) => (
+            {wishlist.map((item) => (
               <div
-                key={product.id}
+                key={item.id}
                 className="col-lg-4 col-md-6"
               >
-                <WishlistCard product={product} />
+                <WishlistCard
+                  item={item}
+                  isProcessing={processingId === item.id}
+                  onMoveToCart={handleMoveToCart}
+                  onRemove={handleRemove}
+                />
               </div>
             ))}
           </div>
