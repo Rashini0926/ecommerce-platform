@@ -15,6 +15,7 @@ import Notifications from "./pages/Notifications";
 import SellerDashboard from "./pages/SellerDashboard";
 import SellerProducts from "./pages/SellerProducts";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
 
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
@@ -38,7 +39,7 @@ function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <Dashboard />
           </ProtectedRoute>
         }
@@ -47,7 +48,7 @@ function App() {
       <Route
         path="/profile"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <Profile />
           </ProtectedRoute>
         }
@@ -56,7 +57,7 @@ function App() {
       <Route
         path="/wishlist"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <Wishlist />
           </ProtectedRoute>
         }
@@ -65,7 +66,7 @@ function App() {
       <Route
         path="/cart"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <Cart />
           </ProtectedRoute>
         }
@@ -84,7 +85,7 @@ function App() {
       <Route
         path="/checkout"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <Checkout />
           </ProtectedRoute>
         }
@@ -93,7 +94,7 @@ function App() {
       <Route
         path="/orders"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <MyOrders />
           </ProtectedRoute>
         }
@@ -102,7 +103,7 @@ function App() {
       <Route
         path="/orders/:id"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <OrderDetails />
           </ProtectedRoute>
         }
@@ -111,7 +112,7 @@ function App() {
       <Route
         path="/order-success"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["customer"]}>
             <OrderSuccess />
           </ProtectedRoute>
         }
@@ -121,22 +122,23 @@ function App() {
       <Route
         path="/seller/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["seller"]}>
             <SellerDashboard />
           </ProtectedRoute>
         }
       />
-      <Route path="/seller/products" element={<ProtectedRoute><SellerProducts /></ProtectedRoute>} />
+      <Route path="/seller/products" element={<ProtectedRoute allowedRoles={["seller", "admin"]}><SellerProducts /></ProtectedRoute>} />
 
       {/* Admin */}
       <Route
         path="/admin/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />
           </ProtectedRoute>
         }
       />
+      <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={["admin"]}><AdminOrders /></ProtectedRoute>} />
     </Routes>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaArrowUp,
   FaCheckCircle,
@@ -103,6 +104,7 @@ const auditLogs = [
 
 function AdminDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState(null);
   const [sellersQueue, setSellersQueue] = useState(pendingSellers);
 
@@ -172,12 +174,12 @@ function AdminDashboard() {
             <div className="admin-quick-actions-grid">
               <button
                 className="admin-quick-btn admin-quick-btn-primary"
-                onClick={() => triggerToast("Generating full platform PDF report...")}
+                onClick={() => navigate("/admin/orders")}
               >
                 <FaDownload className="quick-icon" />
                 <div>
-                  <strong>Export Platform Report</strong>
-                  <small>Download monthly PDF</small>
+                  <strong>Manage Orders</strong>
+                  <small>Review customer orders</small>
                 </div>
               </button>
 
