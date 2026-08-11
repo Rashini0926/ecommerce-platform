@@ -94,6 +94,21 @@ class OrderController extends Controller
         ]);
     }
 
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
+        $orders = Order::with([
+            'items.product',
+            'user:id,full_name,email,phone',
+        ])->latest()->get();
+
+        return response()->json([
+            'success' => true,
+            'orders' => $orders,
+        ]);
+    }
+
     public function show(Request $request, Order $order): JsonResponse
     {
         if ($order->user_id !== $request->user()->id) {
@@ -150,6 +165,11 @@ class OrderController extends Controller
     private function ensureCustomer(Request $request): void
     {
         abort_unless($request->user()->role === 'CUSTOMER', 403, 'Only customer accounts can place orders.');
+    }
+
+    private function ensureAdmin(Request $request): void
+    {
+        abort_unless($request->user()->role === 'ADMIN', 403, 'Administrator access is required.');
     }
 
     private function generateOrderNumber(): string
