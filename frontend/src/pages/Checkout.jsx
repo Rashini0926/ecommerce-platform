@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { getCart } from "../services/customerService";
+import { createOrder } from "../services/orderService";
 
 const formatPrice = (amount) => `Rs. ${Number(amount || 0).toLocaleString("en-LK")}`;
 
 function Checkout() {
   const { token, user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deliveryDetails, setDeliveryDetails] = useState({
     fullName: user?.full_name || "",
     phone: user?.phone || "",
@@ -44,6 +47,40 @@ function Checkout() {
     setDeliveryDetails({ ...deliveryDetails, [event.target.name]: event.target.value });
   };
 
+  const placeOrder = async () => {
+    if (Object.values(deliveryDetails).some((value) => !value.trim())) {
+      showToast("Please complete all delivery information.", "danger");
+      return;
+    }
+
+    const shippingAddress = [
+      deliveryDetails.fullName,
+      deliveryDetails.phone,
+      deliveryDetails.address,
+      deliveryDetails.city,
+    ].join(", ");
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await createOrder(token, {
+        shipping_address: shippingAddress,
+        payment_method: paymentMethod,
+      });
+
+      showToast("Order placed successfully.", "success");
+      navigate(`/order-success?order=${response.order.id}`, { state: { order: response.order } });
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const message = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : error.response?.data?.message || "Could not place your order. Please try again.";
+      showToast(message, "danger");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return <main className="container py-5"><LoadingSpinner text="Loading checkout" /></main>;
   }
@@ -70,7 +107,7 @@ function Checkout() {
       <div className="col-lg-5"><div className="card shadow-sm border-0 sticky-top" style={{ top: "90px" }}><div className="card-body p-4"><h4 className="mb-4">Order Summary</h4>
         {cartItems.map((item) => <div key={item.id} className="d-flex align-items-center mb-3"><img className="rounded me-3 object-fit-cover" width="64" height="64" src={item.product?.image || "https://via.placeholder.com/64?text=Product"} alt="" /><div className="flex-grow-1"><h6 className="mb-1">{item.product?.name}</h6><small className="text-muted">Quantity: {item.quantity}</small></div><strong>{formatPrice(Number(item.product?.price) * item.quantity)}</strong></div>)}
         <hr /><div className="d-flex justify-content-between mb-2"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div><div className="d-flex justify-content-between mb-2"><span>Shipping</span><span className="text-success">Free</span></div><hr /><div className="d-flex justify-content-between"><h5>Total</h5><h5 className="text-primary">{formatPrice(subtotal)}</h5></div>
-        <button className="btn btn-success w-100 mt-4" type="button" disabled>Place Order</button><Link to="/cart" className="btn btn-outline-secondary w-100 mt-2">Back to Cart</Link>
+        <button className="btn btn-success w-100 mt-4" type="button" disabled={isSubmitting} onClick={placeOrder}>{isSubmitting ? "Placing Order..." : "Place Order"}</button><Link to="/cart" className="btn btn-outline-secondary w-100 mt-2">Back to Cart</Link>
       </div></div></div>
     </div>
   </main>;
