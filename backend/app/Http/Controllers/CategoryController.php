@@ -53,6 +53,6 @@ class CategoryController extends Controller
 
     private function ensureAdmin(Request $request): void
     {
-        abort_unless($request->user()->role === 'ADMIN', 403, 'Administrator access is required.');
+        abort_unless(in_array($request->user()->role, ['ADMIN', 'SELLER'], true), 403, 'Catalog manager access is required.');
     }
 }

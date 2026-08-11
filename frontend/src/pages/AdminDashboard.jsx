@@ -185,12 +185,12 @@ function AdminDashboard() {
 
               <button
                 className="admin-quick-btn"
-                onClick={() => triggerToast("System settings panel initialized.")}
+                onClick={() => navigate("/admin/categories")}
               >
                 <FaCog className="quick-icon text-primary" />
                 <div>
-                  <strong>Platform Settings</strong>
-                  <small>Commissions & rules</small>
+                  <strong>Manage Categories</strong>
+                  <small>Categories & subcategories</small>
                 </div>
               </button>
 
