@@ -109,6 +109,41 @@ class OrderController extends Controller
         ]);
     }
 
+    public function updateStatus(Request $request, Order $order): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
+        $validated = $request->validate([
+            'order_status' => ['required', Rule::in(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
+        ]);
+
+        if ($order->order_status === 'CANCELLED' && $validated['order_status'] !== 'CANCELLED') {
+            throw ValidationException::withMessages([
+                'order_status' => 'A cancelled order cannot be reactivated.',
+            ]);
+        }
+
+        DB::transaction(function () use ($order, $validated) {
+            if ($validated['order_status'] === 'CANCELLED' && $order->order_status !== 'CANCELLED') {
+                $order->load('items');
+
+                foreach ($order->items as $item) {
+                    if ($item->product_id) {
+                        Product::whereKey($item->product_id)->increment('stock', $item->quantity);
+                    }
+                }
+            }
+
+            $order->update(['order_status' => $validated['order_status']]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status updated successfully.',
+            'order' => $order->fresh(['items.product', 'user:id,full_name,email,phone']),
+        ]);
+    }
+
     public function show(Request $request, Order $order): JsonResponse
     {
         if ($order->user_id !== $request->user()->id) {
