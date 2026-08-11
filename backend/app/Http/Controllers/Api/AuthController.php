@@ -16,6 +16,7 @@ class AuthController extends Controller
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:15',
+            'role' => 'required|in:customer,seller',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -24,7 +25,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'password' => $validated['password'],
-            'role' => 'CUSTOMER',
+            'role' => strtoupper($validated['role']),
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;

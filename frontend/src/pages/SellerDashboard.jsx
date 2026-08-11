@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaArrowUp,
   FaBoxOpen,
@@ -212,6 +213,7 @@ const performanceItems = [
 
 function SellerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -322,7 +324,7 @@ function SellerDashboard() {
                 <div className="seller-quick-actions-grid">
                   <button
                     className="seller-quick-btn seller-quick-btn-primary"
-                    onClick={() => triggerToast("Add Product form modal available in Product Management module.")}
+                    onClick={() => navigate("/seller/products")}
                   >
                     <FaPlus className="quick-icon" />
                     <div>
@@ -333,7 +335,7 @@ function SellerDashboard() {
 
                   <button
                     className="seller-quick-btn"
-                    onClick={() => triggerToast("Navigating to Store Inventory...")}
+                    onClick={() => navigate("/seller/products")}
                   >
                     <FaBoxes className="quick-icon text-primary" />
                     <div>

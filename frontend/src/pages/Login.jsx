@@ -83,33 +83,18 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      let userData;
-      let authToken = "demo-sanctum-token-12345";
+      const response = await loginUser(email, password);
+      const userData = response.user;
+      const authToken = response.token;
 
-      try {
-        const response = await loginUser(email, password);
-        userData = response.user;
-        authToken = response.token || authToken;
-      } catch {
-        // Fallback demo user construction for seamless role-based evaluation
-        userData = {
-          id: Date.now(),
-          full_name:
-            selectedRole === "admin"
-              ? "Platform Admin"
-              : selectedRole === "seller"
-              ? "TechWorld Official Store"
-              : "Nimal Perera",
-          email: email,
-          role: selectedRole,
-        };
-      }
-
-      // Ensure user object reflects selected role
       const userWithRole = {
         ...userData,
-        role: userData?.role || selectedRole,
+        role: String(userData?.role || "customer").toLowerCase(),
       };
+
+      if (userWithRole.role !== selectedRole) {
+        throw new Error(`This account is registered as a ${userWithRole.role} account. Please select the ${userWithRole.role} portal.`);
+      }
 
       login(userWithRole, authToken);
       showToast(`Logged in successfully as ${currentRoleConfig.label}!`, "success");
@@ -124,9 +109,7 @@ function Login() {
 
       navigate(targetPath);
     } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        "Login failed. Please check credentials.";
+      const message = err.response?.data?.message || err.message || "Login failed. Please check credentials.";
 
       setError(message);
       showToast(message, "danger");

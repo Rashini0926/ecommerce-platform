@@ -19,3 +19,10 @@ export const getCategories = async () => {
 
   return response.data;
 };
+
+const authConfig = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
+
+export const getMyProducts = async (token) => (await api.get("/seller/products", authConfig(token))).data;
+export const createProduct = async (token, product) => (await api.post("/products", product, authConfig(token))).data;
+export const updateProduct = async (token, id, product) => (await api.put(`/products/${id}`, product, authConfig(token))).data;
+export const deleteProduct = async (token, id) => (await api.delete(`/products/${id}`, authConfig(token))).data;

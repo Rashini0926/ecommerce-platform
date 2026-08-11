@@ -51,17 +51,7 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      let response;
-      try {
-        response = await registerUser(formData);
-      } catch {
-        // Fallback response for offline demo testing
-        response = {
-          message: `Account created successfully as ${
-            formData.role === "seller" ? "Seller" : "Customer"
-          }! Please log in.`,
-        };
-      }
+      const response = await registerUser(formData);
 
       const msg = response.message || "Registration successful!";
       setSuccess(msg);

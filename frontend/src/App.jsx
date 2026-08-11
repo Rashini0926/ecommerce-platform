@@ -13,6 +13,7 @@ import Cart from "./pages/Cart";
 import Notifications from "./pages/Notifications";
 
 import SellerDashboard from "./pages/SellerDashboard";
+import SellerProducts from "./pages/SellerProducts";
 import AdminDashboard from "./pages/AdminDashboard";
 
 import Checkout from "./pages/Checkout";
@@ -125,6 +126,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/seller/products" element={<ProtectedRoute><SellerProducts /></ProtectedRoute>} />
 
       {/* Admin */}
       <Route
