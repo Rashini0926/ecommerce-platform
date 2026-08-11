@@ -7266,3 +7266,31 @@
 #35 C:/Users/Rashini/ecommerce-platform/backend/artisan(16): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
 #36 {main}
 "} 
+[2026-08-11 09:39:32] local.ERROR: Writing to directory C:/Users/Rashini/AppData/Roaming/PsySH is not allowed. {"exception":"[object] (ErrorException(code: 0): Writing to directory C:/Users/Rashini/AppData/Roaming/PsySH is not allowed. at C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/ConfigPaths.php:456)
+[stacktrace]
+#0 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(262): Illuminate/Foundation/Bootstrap/HandleExceptions->handleError(1024, 'Writing to dire...', 'C://Users//Rashin...', 456)
+#1 [internal function]: Illuminate/Foundation/Bootstrap/HandleExceptions->Illuminate/Foundation/Bootstrap/{closure}(1024, 'Writing to dire...', 'C://Users//Rashin...', 456)
+#2 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/ConfigPaths.php(456): trigger_error('Writing to dire...', 1024)
+#3 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/ConfigPaths.php(485): Psy/ConfigPaths::ensureDir('C:/Users/Rashin...')
+#4 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/Configuration.php(1068): Psy/ConfigPaths::touchFileWithMkdir('C:/Users/Rashin...')
+#5 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/Configuration.php(1108): Psy/Configuration->setHistoryFile('C:/Users/Rashin...')
+#6 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/Configuration.php(1285): Psy/Configuration->getHistoryFile()
+#7 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/Shell.php(192): Psy/Configuration->getReadline()
+#8 C:/Users/Rashini/ecommerce-platform/backend/vendor/psy/psysh/src/Shell.php(2213): Psy/Shell->boot()
+#9 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/tinker/src/Console/TinkerCommand.php(77): Psy/Shell->execute('echo App////Model...')
+#10 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Laravel/Tinker/Console/TinkerCommand->handle()
+#11 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#12 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#13 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#14 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#15 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate/Container/Container->call(Array)
+#16 C:/Users/Rashini/ecommerce-platform/backend/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#17 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#18 C:/Users/Rashini/ecommerce-platform/backend/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#19 C:/Users/Rashini/ecommerce-platform/backend/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Laravel/Tinker/Console/TinkerCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#20 C:/Users/Rashini/ecommerce-platform/backend/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#21 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#22 C:/Users/Rashini/ecommerce-platform/backend/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#23 C:/Users/Rashini/ecommerce-platform/backend/artisan(16): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#24 {main}
+"} 
