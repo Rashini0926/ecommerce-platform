@@ -108,6 +108,37 @@ class OrderController extends Controller
         ]);
     }
 
+    public function cancel(Request $request, Order $order): JsonResponse
+    {
+        if ($order->user_id !== $request->user()->id) {
+            abort(403, 'You are not allowed to cancel this order.');
+        }
+
+        if ($order->order_status !== 'PROCESSING') {
+            throw ValidationException::withMessages([
+                'order' => 'Only processing orders can be cancelled.',
+            ]);
+        }
+
+        DB::transaction(function () use ($order) {
+            $order->load('items');
+
+            foreach ($order->items as $item) {
+                if ($item->product_id) {
+                    Product::whereKey($item->product_id)->increment('stock', $item->quantity);
+                }
+            }
+
+            $order->update(['order_status' => 'CANCELLED']);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order cancelled successfully.',
+            'order' => $order->fresh('items.product'),
+        ]);
+    }
+
     private function validatedCheckoutData(Request $request): array
     {
         return $request->validate([
