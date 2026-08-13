@@ -29,7 +29,7 @@ class ProductSeeder extends Seeder
                 'color' => 'Black',
                 'size' => null,
                 'rating' => 4.7,
-                'image' => 'https://via.placeholder.com/400x400?text=Galaxy+S23',
+                'image' => '/images/products/samsungs23.jpg',
                 'stock' => 25,
             ],
             [
@@ -42,7 +42,7 @@ class ProductSeeder extends Seeder
                 'color' => 'Titanium Blue',
                 'size' => null,
                 'rating' => 4.8,
-                'image' => 'https://via.placeholder.com/400x400?text=iPhone+15+Pro',
+                'image' => '/images/products/apple-iphone-15-pro-max.jpg',
                 'stock' => 18,
             ],
             [
@@ -55,7 +55,7 @@ class ProductSeeder extends Seeder
                 'color' => 'Silver',
                 'size' => '13-inch',
                 'rating' => 4.9,
-                'image' => 'https://via.placeholder.com/400x400?text=MacBook+Air',
+                'image' => '/images/products/macBook.jpg',
                 'stock' => 12,
             ],
             [
@@ -68,7 +68,7 @@ class ProductSeeder extends Seeder
                 'color' => 'Blue',
                 'size' => 'M',
                 'rating' => 4.3,
-                'image' => 'https://via.placeholder.com/400x400?text=Denim+Jacket',
+                'image' => '/images/products/iphone14.jpg',
                 'stock' => 40,
             ],
         ];
