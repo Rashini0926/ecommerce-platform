@@ -19,6 +19,7 @@ import SellerProducts from "./pages/SellerProducts";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminOrders from "./pages/AdminOrders";
 import AdminCategories from "./pages/AdminCategories";
+import AdminUsers from "./pages/AdminUsers";
 
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
@@ -146,6 +147,7 @@ function App() {
       />
       <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={["admin"]}><AdminOrders /></ProtectedRoute>} />
       <Route path="/admin/categories" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCategories /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
     </Routes>
   );
 }
