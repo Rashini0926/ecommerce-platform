@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductReviewController;
+use App\Http\Controllers\Api\DemoPaymentController;
 
 // use App\Http\Controllers\Api\OrderController;
 
@@ -40,6 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('/orders/{order}/tracking', [OrderController::class, 'tracking']);
+    Route::post('/orders/{order}/payment/initiate', [DemoPaymentController::class, 'initiate']);
+    Route::post('/orders/{order}/payment/complete', [DemoPaymentController::class, 'complete']);
     Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store']);
     Route::delete('/products/{product}/reviews/{review}', [ProductReviewController::class, 'destroy']);
     Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
