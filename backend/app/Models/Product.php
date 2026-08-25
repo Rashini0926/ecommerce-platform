@@ -26,7 +26,9 @@ class Product extends Model
 
     public function category()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(
+            Category::class
+        );
     }
 
     public function seller()
@@ -36,7 +38,9 @@ class Product extends Model
 
     public function subcategory()
     {
-        return $this->belongsTo(Subcategory::class);
+        return $this->belongsTo(
+            Subcategory::class
+        );
     }
 
     public function wishlistItems()

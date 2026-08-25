@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -105,30 +106,61 @@ function Categories() {
                     animation: 'catFadeIn 0.18s ease',
                   }}
                 >
-                  {category.subcategories.map((sub) => (
-                    <div
-                      key={sub.id}
-                      style={{
-                        padding: '9px 20px',
-                        fontSize: '13.5px',
-                        color: '#374151',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f5f8ff';
-                        e.currentTarget.style.color = '#2563eb';
-                        e.currentTarget.style.paddingLeft = '24px';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#374151';
-                        e.currentTarget.style.paddingLeft = '20px';
-                      }}
-                    >
-                      {sub.name}
-                    </div>
-                  ))}
+                  {category.subcategories.map((sub) => {
+                    const isMobilePhones =
+                      (sub.name || '').trim().toLowerCase() === 'mobile phones';
+
+                    return isMobilePhones ? (
+                      <Link
+                        key={sub.id}
+                        to="/products"
+                        style={{
+                          display: 'block',
+                          padding: '9px 20px',
+                          fontSize: '13.5px',
+                          color: '#374151',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          textDecoration: 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f5f8ff';
+                          e.currentTarget.style.color = '#2563eb';
+                          e.currentTarget.style.paddingLeft = '24px';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#374151';
+                          e.currentTarget.style.paddingLeft = '20px';
+                        }}
+                      >
+                        {sub.name}
+                      </Link>
+                    ) : (
+                      <div
+                        key={sub.id}
+                        style={{
+                          padding: '9px 20px',
+                          fontSize: '13.5px',
+                          color: '#374151',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f5f8ff';
+                          e.currentTarget.style.color = '#2563eb';
+                          e.currentTarget.style.paddingLeft = '24px';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#374151';
+                          e.currentTarget.style.paddingLeft = '20px';
+                        }}
+                      >
+                        {sub.name}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
