@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { addToCart } from '../services/customerService';
+import { getProduct } from '../services/productService';
 
 function ProductDetails() {
   const { id } = useParams();
@@ -17,8 +18,7 @@ function ProductDetails() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/products/${id}`)
-      .then((res) => res.json())
+    getProduct(id)
       .then((data) => {
         setProduct(data);
         setLoading(false);

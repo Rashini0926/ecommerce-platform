@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getCategories } from '../../services/productService';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -7,8 +8,7 @@ function Categories() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/categories')
-      .then((res) => res.json())
+    getCategories()
       .then((data) => {
         setCategories(data);
         setLoading(false);

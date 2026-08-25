@@ -18,6 +18,7 @@ import {
 
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import { API_BASE_URL } from "../utils/api";
 
 function Products() {
   const [searchParams] = useSearchParams();
@@ -25,8 +26,7 @@ function Products() {
   const initialSearch =
     searchParams.get("search") || "";
 
-  const API_URL =
-    "http://127.0.0.1:8000/api";
+  const API_URL = API_BASE_URL;
 
   /*
   ==========================================================
