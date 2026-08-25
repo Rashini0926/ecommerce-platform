@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
                 ...$user,
                 'phone' => '0771234567',
                 'password' => 'password123',
+                'status' => 'ACTIVE',
             ]);
         }
 

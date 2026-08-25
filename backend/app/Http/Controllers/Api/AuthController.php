@@ -28,6 +28,7 @@ class AuthController extends Controller
             'phone' => $validated['phone'],
             'password' => $validated['password'],
             'role' => strtoupper($validated['role']),
+            'status' => $validated['role'] === 'seller' ? 'PENDING' : 'ACTIVE',
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -55,6 +56,10 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Invalid email or password.',
             ], 401);
+        }
+
+        if ($user->status !== 'ACTIVE') {
+            return response()->json(['success' => false, 'message' => $user->status === 'PENDING' ? 'Your account is awaiting administrator approval.' : 'Your account has been suspended.'], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

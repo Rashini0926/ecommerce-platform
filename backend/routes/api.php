@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\DemoPaymentController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\SellerOrderController;
 
 // use App\Http\Controllers\Api\OrderController;
@@ -55,6 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus']);
     Route::patch('/admin/orders/{order}/shipping', [OrderController::class, 'updateShipping']);
+    Route::get('/admin/users', [AdminUserController::class, 'index']);
+    Route::patch('/admin/users/{user}/status', [AdminUserController::class, 'updateStatus']);
 
     Route::get('/seller/products', [ProductController::class, 'mine']);
     Route::get('/seller/order-items', [SellerOrderController::class, 'index']);
