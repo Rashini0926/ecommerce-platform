@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowUp,
@@ -18,6 +18,7 @@ import {
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
 const adminKpis = [
   {
@@ -103,10 +104,24 @@ const auditLogs = [
 ];
 
 function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState(null);
   const [sellersQueue, setSellersQueue] = useState(pendingSellers);
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    api.get("/admin/reports/summary", { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => setSummary(response.data.summary))
+      .catch(() => {});
+  }, [token]);
+
+  const liveKpis = summary ? [
+    { ...adminKpis[0], value: `Rs. ${Number(summary.paid_revenue || 0).toLocaleString()}`, note: "Paid order revenue" },
+    { ...adminKpis[1], value: Number(summary.total_users || 0).toLocaleString(), note: "Registered platform users" },
+    { ...adminKpis[2], value: `${summary.active_sellers || 0} Stores`, note: "Approved seller accounts" },
+    { ...adminKpis[3], value: Number(summary.total_orders || 0).toLocaleString(), note: "All platform orders" },
+  ] : adminKpis;
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -196,12 +211,12 @@ function AdminDashboard() {
 
               <button
                 className="admin-quick-btn"
-                onClick={() => triggerToast("Navigating to Full User Management...")}
+                onClick={() => navigate("/admin/users")}
               >
                 <FaUsers className="quick-icon text-success" />
                 <div>
                   <strong>Manage All Users</strong>
-                  <small>1,420 active accounts</small>
+                  <small>Review users and seller approvals</small>
                 </div>
               </button>
 
@@ -221,7 +236,7 @@ function AdminDashboard() {
 
         {/* KPI Cards */}
         <div className="row g-4 mb-4">
-          {adminKpis.map((kpi) => (
+          {liveKpis.map((kpi) => (
             <div className="col-sm-6 col-xl-3" key={kpi.title}>
               <div className="card admin-kpi-card h-100">
                 <div className="card-body p-4">
