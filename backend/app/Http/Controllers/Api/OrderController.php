@@ -134,13 +134,62 @@ class OrderController extends Controller
                 }
             }
 
-            $order->update(['order_status' => $validated['order_status']]);
+            $order->update([
+                'order_status' => $validated['order_status'],
+                'delivered_at' => $validated['order_status'] === 'DELIVERED' ? ($order->delivered_at ?? now()) : $order->delivered_at,
+            ]);
         });
 
         return response()->json([
             'success' => true,
             'message' => 'Order status updated successfully.',
             'order' => $order->fresh(['items.product', 'user:id,full_name,email,phone']),
+        ]);
+    }
+
+    public function updateShipping(Request $request, Order $order): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
+        if (in_array($order->order_status, ['DELIVERED', 'CANCELLED'], true)) {
+            throw ValidationException::withMessages(['order' => 'Shipping cannot be updated for delivered or cancelled orders.']);
+        }
+
+        $data = $request->validate([
+            'courier_name' => ['required', 'string', 'max:255'],
+            'tracking_number' => ['required', 'string', 'max:255', Rule::unique('orders', 'tracking_number')->ignore($order->id)],
+            'shipping_fee' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $order->update([
+            ...$data,
+            'order_status' => 'SHIPPED',
+            'shipped_at' => $order->shipped_at ?? now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Shipping details updated successfully.',
+            'order' => $order->fresh(['items.product', 'user:id,full_name,email,phone']),
+        ]);
+    }
+
+    public function tracking(Request $request, Order $order): JsonResponse
+    {
+        $isOwner = $order->user_id === $request->user()->id;
+        $isAdmin = $request->user()->role === 'ADMIN';
+        abort_unless($isOwner || $isAdmin, 403, 'You are not allowed to view this shipment.');
+
+        return response()->json([
+            'success' => true,
+            'tracking' => [
+                'order_number' => $order->order_number,
+                'order_status' => $order->order_status,
+                'courier_name' => $order->courier_name,
+                'tracking_number' => $order->tracking_number,
+                'shipped_at' => $order->shipped_at,
+                'delivered_at' => $order->delivered_at,
+            ],
         ]);
     }
 

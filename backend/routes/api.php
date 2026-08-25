@@ -39,10 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::get('/orders/{order}/tracking', [OrderController::class, 'tracking']);
     Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store']);
     Route::delete('/products/{product}/reviews/{review}', [ProductReviewController::class, 'destroy']);
     Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('/admin/orders/{order}/shipping', [OrderController::class, 'updateShipping']);
 
     Route::get('/seller/products', [ProductController::class, 'mine']);
     Route::post('/products', [ProductController::class, 'store']);

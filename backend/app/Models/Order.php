@@ -13,9 +13,12 @@ class Order extends Model
         'order_number',
         'user_id',
         'shipping_address',
+        'courier_name',
+        'tracking_number',
         'payment_method',
         'payment_status',
         'total_amount',
+        'shipping_fee',
         'order_status',
     ];
 
@@ -23,6 +26,9 @@ class Order extends Model
     {
         return [
             'total_amount' => 'decimal:2',
+            'shipping_fee' => 'decimal:2',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 
