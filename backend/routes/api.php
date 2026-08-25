@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\DemoPaymentController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SellerOrderController;
 
 // use App\Http\Controllers\Api\OrderController;
@@ -60,9 +61,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/admin/orders/{order}/shipping', [OrderController::class, 'updateShipping']);
     Route::get('/admin/users', [AdminUserController::class, 'index']);
     Route::patch('/admin/users/{user}/status', [AdminUserController::class, 'updateStatus']);
+    Route::get('/admin/reports/summary', [ReportController::class, 'adminSummary']);
 
     Route::get('/seller/products', [ProductController::class, 'mine']);
     Route::get('/seller/order-items', [SellerOrderController::class, 'index']);
+    Route::get('/seller/reports/summary', [ReportController::class, 'sellerSummary']);
     Route::patch('/seller/order-items/{orderItem}/fulfillment', [SellerOrderController::class, 'updateStatus']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
