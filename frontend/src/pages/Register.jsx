@@ -5,6 +5,7 @@ import {
   FaLock,
   FaPhone,
   FaShoppingBag,
+  FaStore,
   FaUser,
 } from "react-icons/fa";
 import { registerUser } from "../services/authService";
@@ -19,6 +20,7 @@ function Register() {
     full_name: "",
     email: "",
     phone: "",
+    role: "customer",
     password: "",
     password_confirmation: "",
   });
@@ -34,6 +36,13 @@ function Register() {
     });
   };
 
+  const handleRoleSelect = (role) => {
+    setFormData({
+      ...formData,
+      role,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -44,8 +53,9 @@ function Register() {
     try {
       const response = await registerUser(formData);
 
-      setSuccess(response.message);
-      showToast(response.message || "Registration successful.", "success");
+      const msg = response.message || "Registration successful!";
+      setSuccess(msg);
+      showToast(msg, "success");
 
       setTimeout(() => {
         navigate("/login");
@@ -67,19 +77,33 @@ function Register() {
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-10">
-            <div className="card auth-panel glass-card border-0 overflow-hidden">
+            <div className="card auth-panel glass-card border-0 overflow-hidden shadow-lg">
               <div className="row g-0">
-                <div className="col-lg-5 d-none d-lg-flex auth-side p-5 flex-column justify-content-between">
+                <div
+                  className={`col-lg-5 d-none d-lg-flex auth-side ${
+                    formData.role === "seller" ? "auth-side-seller" : "auth-side-customer"
+                  } p-5 flex-column justify-content-between`}
+                >
                   <div>
-                    <FaShoppingBag size={42} className="mb-4" />
-                    <h1 className="h2">Create your ShopEase account</h1>
+                    {formData.role === "seller" ? (
+                      <FaStore size={42} className="mb-4 text-white" />
+                    ) : (
+                      <FaShoppingBag size={42} className="mb-4 text-white" />
+                    )}
+                    <h1 className="h2">
+                      {formData.role === "seller"
+                        ? "Join ShopEase Merchant Network"
+                        : "Create your ShopEase account"}
+                    </h1>
                     <p className="mt-3 text-white-50">
-                      Save favorites, speed through checkout, and track your account activity.
+                      {formData.role === "seller"
+                        ? "Sell products to thousands of online customers across the platform."
+                        : "Save favorites, speed through checkout, and track your order history."}
                     </p>
                   </div>
 
-                  <span className="badge bg-light text-primary align-self-start">
-                    Fast registration
+                  <span className="badge bg-light text-primary align-self-start py-2 px-3 fw-bold">
+                    {formData.role === "seller" ? "Seller Registration" : "Fast Customer Signup"}
                   </span>
                 </div>
 
@@ -91,20 +115,38 @@ function Register() {
                       </div>
 
                       <h2 className="mb-1">Create Account</h2>
-                      <p className="text-muted">Join ShopEase in a few steps</p>
+                      <p className="text-muted small">Choose your account type to register</p>
                     </div>
 
-                    {error && (
-                      <div className="alert alert-danger">
-                        {error}
-                      </div>
-                    )}
+                    {/* Role Choice Selector */}
+                    <div className="d-flex gap-2 mb-4">
+                      <button
+                        type="button"
+                        className={`btn flex-fill py-2 rounded-3 ${
+                          formData.role === "customer"
+                            ? "btn-primary shadow-sm"
+                            : "btn-outline-secondary"
+                        }`}
+                        onClick={() => handleRoleSelect("customer")}
+                      >
+                        <FaShoppingBag className="me-2" /> Customer Account
+                      </button>
 
-                    {success && (
-                      <div className="alert alert-success">
-                        {success}
-                      </div>
-                    )}
+                      <button
+                        type="button"
+                        className={`btn flex-fill py-2 rounded-3 ${
+                          formData.role === "seller"
+                            ? "btn-success shadow-sm"
+                            : "btn-outline-secondary"
+                        }`}
+                        onClick={() => handleRoleSelect("seller")}
+                      >
+                        <FaStore className="me-2" /> Seller Store
+                      </button>
+                    </div>
+
+                    {error && <div className="alert alert-danger">{error}</div>}
+                    {success && <div className="alert alert-success">{success}</div>}
 
                     <form onSubmit={handleSubmit}>
                       <div className="input-group mb-3">
@@ -115,7 +157,7 @@ function Register() {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Full Name"
+                          placeholder={formData.role === "seller" ? "Store Name / Owner Name" : "Full Name"}
                           name="full_name"
                           value={formData.full_name}
                           onChange={handleChange}
@@ -195,29 +237,29 @@ function Register() {
                           required
                         />
 
-                        <label className="form-check-label" htmlFor="terms">
-                          I agree to the Terms & Conditions
+                        <label className="form-check-label small" htmlFor="terms">
+                          I agree to the ShopEase Terms & Conditions
                         </label>
                       </div>
 
                       <button
                         type="submit"
-                        className="btn btn-success w-100 ripple"
+                        className={`btn ${
+                          formData.role === "seller" ? "btn-success" : "btn-primary"
+                        } w-100 ripple py-2`}
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? (
                           <LoadingSpinner text="Creating account" />
                         ) : (
-                          "Register"
+                          `Register as ${formData.role === "seller" ? "Seller" : "Customer"}`
                         )}
                       </button>
                     </form>
 
-                    <p className="text-center mt-4">
+                    <p className="text-center mt-4 mb-0">
                       Already have an account?
-                      <Link to="/login">
-                        {" "}Login
-                      </Link>
+                      <Link to="/login"> Login</Link>
                     </p>
                   </div>
                 </div>

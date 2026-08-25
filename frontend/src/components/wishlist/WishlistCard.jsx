@@ -1,12 +1,19 @@
 import { FaHeart, FaShoppingCart, FaTrash } from "react-icons/fa";
 
-function WishlistCard({ product }) {
+function WishlistCard({
+  item,
+  onMoveToCart,
+  onRemove,
+  isProcessing,
+}) {
+  const product = item.product;
+
   return (
     <div className="card wishlist-card hover-lift card-hover-shadow h-100">
       <div className="product-image-wrap position-relative">
         <img
-          src={product.image}
-          alt={product.name}
+          src={product?.image || "https://via.placeholder.com/400x300?text=Product"}
+          alt={product?.name || "Product"}
           className="wishlist-image"
         />
 
@@ -16,20 +23,32 @@ function WishlistCard({ product }) {
         </span>
       </div>
 
-      <div className="card-body p-4">
-        <h5>{product.name}</h5>
+      <div className="card-body p-4 d-flex flex-column">
+        <p className="text-muted small fw-bold mb-1">
+          {product?.category?.name || "Product"}
+        </p>
+
+        <h5>{product?.name}</h5>
 
         <h4 className="text-primary">
-          Rs. {product.price.toLocaleString()}
+          Rs. {Number(product?.price || 0).toLocaleString()}
         </h4>
 
-        <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success ripple">
+        <div className="d-grid gap-2 mt-auto">
+          <button
+            className="btn btn-success ripple"
+            disabled={isProcessing}
+            onClick={() => onMoveToCart(item)}
+          >
             <FaShoppingCart className="me-2" />
             Add to Cart
           </button>
 
-          <button className="btn btn-outline-danger">
+          <button
+            className="btn btn-outline-danger"
+            disabled={isProcessing}
+            onClick={() => onRemove(item.id)}
+          >
             <FaTrash className="me-2" />
             Remove
           </button>

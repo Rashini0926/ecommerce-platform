@@ -3,21 +3,25 @@ import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
+const normalizeUserRole = (userData) =>
+    userData ? { ...userData, role: String(userData.role || "CUSTOMER").toLowerCase() } : null;
+
 export function AuthProvider({ children }) {
 
     const [user, setUser] = useState(() => {
         const savedUser = localStorage.getItem("user");
 
-        return savedUser ? JSON.parse(savedUser) : null;
+        return savedUser ? normalizeUserRole(JSON.parse(savedUser)) : null;
     });
     const [token, setToken] = useState(localStorage.getItem("token"));
 
     const login = (userData, authToken) => {
 
-        setUser(userData);
+        const normalizedUser = normalizeUserRole(userData);
+        setUser(normalizedUser);
         setToken(authToken);
 
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(normalizedUser));
         localStorage.setItem("token", authToken);
 
     };

@@ -1,385 +1,1427 @@
-import { useMemo, useState } from "react";
+import "./Products.css";
+
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+
 import {
-  FaCartPlus,
-  FaFilter,
-  FaHeart,
-  FaRegStar,
   FaSearch,
-  FaSlidersH,
+  FaFilter,
+  FaTimes,
   FaStar,
+  FaHeart,
+  FaBoxOpen,
+  FaTag,
+  FaPalette,
+  FaLayerGroup,
+  FaList,
 } from "react-icons/fa";
-import Footer from "../components/layout/Footer";
+
 import Navbar from "../components/layout/Navbar";
-
-const products = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    price: 8500,
-    rating: 4.8,
-    reviews: 128,
-    tag: "Best seller",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 2,
-    name: "Smart Watch",
-    category: "Electronics",
-    price: 12000,
-    rating: 4.6,
-    reviews: 92,
-    tag: "New arrival",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 3,
-    name: "Laptop Backpack",
-    category: "Fashion",
-    price: 4500,
-    rating: 4.4,
-    reviews: 74,
-    tag: "Top rated",
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 4,
-    name: "Bluetooth Speaker",
-    category: "Electronics",
-    price: 6000,
-    rating: 4.5,
-    reviews: 88,
-    tag: "Flash deal",
-    image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 5,
-    name: "Cotton Casual Shirt",
-    category: "Fashion",
-    price: 3200,
-    rating: 4.3,
-    reviews: 56,
-    tag: "Popular",
-    image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 6,
-    name: "Ceramic Dinner Set",
-    category: "Home & Living",
-    price: 7200,
-    rating: 4.7,
-    reviews: 61,
-    tag: "Limited stock",
-    image: "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 7,
-    name: "Skincare Gift Box",
-    category: "Beauty",
-    price: 5600,
-    rating: 4.5,
-    reviews: 43,
-    tag: "Gift pick",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80",
-  },
-  {
-    id: 8,
-    name: "Fitness Yoga Mat",
-    category: "Sports",
-    price: 2800,
-    rating: 4.2,
-    reviews: 39,
-    tag: "Value deal",
-    image: "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=700&q=80",
-  },
-];
-
-const categories = [
-  "All",
-  "Electronics",
-  "Fashion",
-  "Home & Living",
-  "Beauty",
-  "Sports",
-];
-
-const priceRanges = [
-  { label: "All prices", min: 0, max: Infinity },
-  { label: "Under Rs. 5,000", min: 0, max: 5000 },
-  { label: "Rs. 5,000 - Rs. 10,000", min: 5000, max: 10000 },
-  { label: "Above Rs. 10,000", min: 10000, max: Infinity },
-];
-
-function formatPrice(price) {
-  return `Rs. ${price.toLocaleString("en-LK")}`;
-}
+import Footer from "../components/layout/Footer";
 
 function Products() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialSearch = searchParams.get("search") || "";
+  const [searchParams] = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedPriceRange, setSelectedPriceRange] = useState("All prices");
-  const [sortOrder, setSortOrder] = useState("featured");
+  const initialSearch =
+    searchParams.get("search") || "";
 
-  const filteredProducts = useMemo(() => {
-    const activePriceRange =
-      priceRanges.find((range) => range.label === selectedPriceRange) ||
-      priceRanges[0];
+  const API_URL =
+    "http://127.0.0.1:8000/api";
 
-    const filteredItems = products.filter((product) => {
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        selectedCategory === "All" || product.category === selectedCategory;
-      const matchesPrice =
-        product.price >= activePriceRange.min &&
-        product.price <= activePriceRange.max;
+  /*
+  ==========================================================
+  DATA STATES
+  ==========================================================
+  */
 
-      return matchesSearch && matchesCategory && matchesPrice;
-    });
+  const [products, setProducts] =
+    useState([]);
 
-    return [...filteredItems].sort((firstProduct, secondProduct) => {
-      if (sortOrder === "price-low") {
-        return firstProduct.price - secondProduct.price;
+  const [categories, setCategories] =
+    useState([]);
+
+  const [subcategories, setSubcategories] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  /*
+  ==========================================================
+  FILTER STATES
+  ==========================================================
+  */
+
+  const [search, setSearch] =
+    useState(initialSearch);
+
+  const [categoryId, setCategoryId] =
+    useState("");
+
+  const [
+    subcategoryId,
+    setSubcategoryId,
+  ] = useState("");
+
+  const [brand, setBrand] =
+    useState("");
+
+  const [color, setColor] =
+    useState("");
+
+  const [size, setSize] =
+    useState("");
+
+  const [minPrice, setMinPrice] =
+    useState("");
+
+  const [maxPrice, setMaxPrice] =
+    useState("");
+
+  const [minRating, setMinRating] =
+    useState("");
+
+  /*
+  ==========================================================
+  WISHLIST STATE
+  ==========================================================
+  */
+
+  const [
+    wishlistState,
+    setWishlistState,
+  ] = useState({});
+
+  /*
+  ==========================================================
+  FETCH PRODUCTS
+  ==========================================================
+  */
+
+  const fetchProducts = async (
+    customFilters = null
+  ) => {
+    try {
+      setLoading(true);
+
+      const filters =
+        customFilters || {
+          search,
+          categoryId,
+          subcategoryId,
+          brand,
+          color,
+          size,
+          minPrice,
+          maxPrice,
+          minRating,
+        };
+
+      const params =
+        new URLSearchParams();
+
+      /*
+      SEARCH
+      */
+
+      if (filters.search) {
+        params.append(
+          "search",
+          filters.search
+        );
       }
 
-      if (sortOrder === "price-high") {
-        return secondProduct.price - firstProduct.price;
+      /*
+      CATEGORY
+      */
+
+      if (filters.categoryId) {
+        params.append(
+          "category_id",
+          filters.categoryId
+        );
       }
 
-      if (sortOrder === "rating") {
-        return secondProduct.rating - firstProduct.rating;
+      /*
+      SUBCATEGORY
+      */
+
+      if (filters.subcategoryId) {
+        params.append(
+          "subcategory_id",
+          filters.subcategoryId
+        );
       }
 
-      return firstProduct.id - secondProduct.id;
-    });
-  }, [searchTerm, selectedCategory, selectedPriceRange, sortOrder]);
+      /*
+      BRAND
+      */
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
+      if (filters.brand) {
+        params.append(
+          "brand",
+          filters.brand
+        );
+      }
 
-    const trimmedSearchTerm = searchTerm.trim();
+      /*
+      COLOR
+      */
 
-    if (trimmedSearchTerm) {
-      setSearchParams({ search: trimmedSearchTerm });
-    } else {
-      setSearchParams({});
+      if (filters.color) {
+        params.append(
+          "color",
+          filters.color
+        );
+      }
+
+      /*
+      SIZE
+      */
+
+      if (filters.size) {
+        params.append(
+          "size",
+          filters.size
+        );
+      }
+
+      /*
+      MINIMUM PRICE
+      */
+
+      if (filters.minPrice) {
+        params.append(
+          "min_price",
+          filters.minPrice
+        );
+      }
+
+      /*
+      MAXIMUM PRICE
+      */
+
+      if (filters.maxPrice) {
+        params.append(
+          "max_price",
+          filters.maxPrice
+        );
+      }
+
+      /*
+      MINIMUM RATING
+      */
+
+      if (filters.minRating) {
+        params.append(
+          "min_rating",
+          filters.minRating
+        );
+      }
+
+      const response = await fetch(
+        `${API_URL}/products?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Unable to fetch products."
+        );
+      }
+
+      const data =
+        await response.json();
+
+      setProducts(data);
+
+    } catch (error) {
+
+      console.error(
+        "Product loading error:",
+        error
+      );
+
+      setProducts([]);
+
+    } finally {
+
+      setLoading(false);
+
     }
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedCategory("All");
-    setSelectedPriceRange("All prices");
-    setSortOrder("featured");
-    setSearchParams({});
+  /*
+  ==========================================================
+  FETCH CATEGORIES
+  ==========================================================
+  */
+
+  const fetchCategories =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/categories`
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to fetch categories."
+          );
+        }
+
+        const data =
+          await response.json();
+
+        setCategories(data);
+
+      } catch (error) {
+
+        console.error(
+          "Category loading error:",
+          error
+        );
+
+      }
+    };
+
+  /*
+  ==========================================================
+  FETCH SUBCATEGORIES
+  ==========================================================
+  */
+
+  const fetchSubcategories =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/subcategories`
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to fetch subcategories."
+          );
+        }
+
+        const data =
+          await response.json();
+
+        setSubcategories(data);
+
+      } catch (error) {
+
+        console.error(
+          "Subcategory loading error:",
+          error
+        );
+
+      }
+    };
+
+  /*
+  ==========================================================
+  FIRST PAGE LOAD
+  ==========================================================
+  */
+
+  useEffect(() => {
+
+    fetchCategories();
+
+    fetchSubcategories();
+
+    fetchProducts({
+      search: initialSearch,
+      categoryId: "",
+      subcategoryId: "",
+      brand: "",
+      color: "",
+      size: "",
+      minPrice: "",
+      maxPrice: "",
+      minRating: "",
+    });
+
+  }, []);
+
+  /*
+  ==========================================================
+  GET SUBCATEGORIES FOR SELECTED CATEGORY
+  ==========================================================
+  */
+
+  const filteredSubcategories =
+    categoryId
+      ? subcategories.filter(
+          (subcategory) =>
+            String(
+              subcategory.category_id
+            ) === String(categoryId)
+        )
+      : [];
+
+  /*
+  ==========================================================
+  CATEGORY CHANGE
+  ==========================================================
+  */
+
+  const handleCategoryChange = (
+    event
+  ) => {
+    const selectedCategoryId =
+      event.target.value;
+
+    setCategoryId(
+      selectedCategoryId
+    );
+
+    /*
+    Reset old subcategory when
+    category changes.
+    */
+
+    setSubcategoryId("");
   };
 
+  /*
+  ==========================================================
+  APPLY FILTER
+  ==========================================================
+  */
+
+  const handleFilter = (
+    event
+  ) => {
+    event.preventDefault();
+
+    fetchProducts();
+  };
+
+  /*
+  ==========================================================
+  CLEAR FILTERS
+  ==========================================================
+  */
+
+  const clearFilters = () => {
+
+    setSearch("");
+
+    setCategoryId("");
+
+    setSubcategoryId("");
+
+    setBrand("");
+
+    setColor("");
+
+    setSize("");
+
+    setMinPrice("");
+
+    setMaxPrice("");
+
+    setMinRating("");
+
+    fetchProducts({
+      search: "",
+      categoryId: "",
+      subcategoryId: "",
+      brand: "",
+      color: "",
+      size: "",
+      minPrice: "",
+      maxPrice: "",
+      minRating: "",
+    });
+  };
+
+  /*
+  ==========================================================
+  WISHLIST
+  ==========================================================
+  */
+
+  const toggleWishlist = (
+    productId
+  ) => {
+    setWishlistState(
+      (previous) => ({
+        ...previous,
+
+        [productId]:
+          !previous[productId],
+      })
+    );
+  };
+
+  /*
+  ==========================================================
+  PRODUCT IMAGE
+  ==========================================================
+  */
+
+  const getImageSrc = (
+    image
+  ) => {
+
+    if (!image) {
+      return "/images/products/placeholder.svg";
+    }
+
+    if (
+      image.startsWith(
+        "http://"
+      ) ||
+      image.startsWith(
+        "https://"
+      )
+    ) {
+      return image;
+    }
+
+    return `/${image.replace(
+      /^\/+/,
+      ""
+    )}`;
+  };
+
+  /*
+  ==========================================================
+  FIND SELECTED CATEGORY
+  ==========================================================
+  */
+
+  const selectedCategory =
+    categories.find(
+      (category) =>
+        String(category.id) ===
+        String(categoryId)
+    );
+
+  /*
+  ==========================================================
+  FIND SELECTED SUBCATEGORY
+  ==========================================================
+  */
+
+  const selectedSubcategory =
+    subcategories.find(
+      (subcategory) =>
+        String(
+          subcategory.id
+        ) ===
+        String(
+          subcategoryId
+        )
+    );
+
+  /*
+  ==========================================================
+  PAGE
+  ==========================================================
+  */
+
   return (
-    <div className="app-page">
+    <>
       <Navbar />
 
-      <main className="container py-5">
-        <div className="products-header mb-4">
-          <div>
-            <span className="section-kicker">Browse products</span>
-            <h1 className="mt-2 mb-2">Find Your Next Favorite Item</h1>
-            <p className="text-muted mb-0">
-              Search products, compare prices, and filter by shopping category.
-            </p>
-          </div>
+      <main className="products-page">
 
-          <span className="badge badge-soft-primary">
-            {filteredProducts.length} products found
-          </span>
-        </div>
+        {/* ================================================= */}
+        {/* PAGE HEADER */}
+        {/* ================================================= */}
 
-        <div className="row g-4">
-          <div className="col-lg-3">
-            <aside className="card glass-card product-filter-panel">
-              <div className="card-body">
-                <div className="d-flex align-items-center justify-content-between mb-4">
-                  <h5 className="mb-0">
-                    <FaSlidersH className="me-2 text-primary" />
-                    Filters
-                  </h5>
+        <section className="products-header">
 
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={clearFilters}
-                  >
-                    Clear
-                  </button>
-                </div>
+          <div className="container">
 
-                <form onSubmit={handleSearchSubmit}>
-                  <label className="form-label fw-bold">Search</label>
-                  <div className="input-group mb-4">
-                    <span className="input-group-text">
-                      <FaSearch />
-                    </span>
+            <div className="products-header-content">
 
-                    <input
-                      type="search"
-                      className="form-control"
-                      placeholder="Product name"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
+              <div>
 
-                  <button type="submit" className="btn btn-primary w-100 mb-4">
-                    <FaFilter className="me-2" />
-                    Apply Search
-                  </button>
-                </form>
+                <span className="products-subtitle">
+                  SHOP OUR COLLECTION
+                </span>
 
-                <label className="form-label fw-bold">Category</label>
-                <select
-                  className="form-select mb-4"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map((category) => (
-                    <option value={category} key={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                <h1>
+                  Explore Our Products
+                </h1>
 
-                <label className="form-label fw-bold">Price Range</label>
-                <select
-                  className="form-select"
-                  value={selectedPriceRange}
-                  onChange={(e) => setSelectedPriceRange(e.target.value)}
-                >
-                  {priceRanges.map((range) => (
-                    <option value={range.label} key={range.label}>
-                      {range.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </aside>
-          </div>
-
-          <div className="col-lg-9">
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-              <p className="text-muted mb-0">
-                Showing {filteredProducts.length} of {products.length} products
-              </p>
-
-              <select
-                className="form-select product-sort-select"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                aria-label="Sort products"
-              >
-                <option value="featured">Sort by featured</option>
-                <option value="price-low">Price: low to high</option>
-                <option value="price-high">Price: high to low</option>
-                <option value="rating">Highest rated</option>
-              </select>
-            </div>
-
-            {filteredProducts.length === 0 ? (
-              <div className="card glass-card empty-state">
-                <div className="empty-illustration mb-4">
-                  <FaSearch size={42} />
-                </div>
-
-                <h4>No products found.</h4>
-                <p className="text-muted">
-                  Try changing your search keyword, category, or price range.
+                <p>
+                  Discover products from
+                  different categories and
+                  easily find exactly what
+                  you are looking for.
                 </p>
 
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={clearFilters}
-                >
-                  Reset Filters
-                </button>
               </div>
-            ) : (
-              <div className="row g-4">
-                {filteredProducts.map((product) => (
-                  <div className="col-md-6 col-xl-4" key={product.id}>
-                    <div className="card product-card hover-lift card-hover-shadow h-100">
-                      <div className="product-image-wrap">
-                        <img
-                          src={product.image}
-                          className="product-image"
-                          alt={product.name}
-                        />
-                      </div>
 
-                      <div className="card-body d-flex flex-column">
-                        <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
-                          <span className="badge badge-soft-accent">
-                            {product.tag}
-                          </span>
+              <div className="products-header-icon">
 
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger product-icon-button"
-                            aria-label={`Add ${product.name} to wishlist`}
-                          >
-                            <FaHeart />
-                          </button>
-                        </div>
+                <FaBoxOpen />
 
-                        <p className="text-muted small fw-bold mb-1">
-                          {product.category}
-                        </p>
-
-                        <h5 className="product-title">{product.name}</h5>
-
-                        <div className="product-rating mb-2">
-                          <FaStar />
-                          <FaStar />
-                          <FaStar />
-                          <FaStar />
-                          <FaRegStar />
-                          <span>
-                            {product.rating} ({product.reviews})
-                          </span>
-                        </div>
-
-                        <p className="text-primary fw-bold fs-5 mb-4">
-                          {formatPrice(product.price)}
-                        </p>
-
-                        <div className="d-grid gap-2 mt-auto">
-                          <button className="btn btn-primary ripple">
-                            <FaCartPlus className="me-2" />
-                            Add to Cart
-                          </button>
-
-                          <Link
-                            className="btn btn-outline-primary"
-                            to={`/products/${product.id}`}
-                          >
-                            View Details
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
-            )}
+
+            </div>
+
           </div>
-        </div>
+
+        </section>
+
+
+        {/* ================================================= */}
+        {/* PRODUCT SECTION */}
+        {/* ================================================= */}
+
+        <section className="container products-content">
+
+          <div className="row g-4">
+
+
+            {/* ================================================= */}
+            {/* LEFT FILTER */}
+            {/* ================================================= */}
+
+            <div className="col-12 col-lg-3">
+
+              <div className="filter-card">
+
+
+                {/* FILTER HEADER */}
+
+                <div className="filter-title-area">
+
+                  <h4>
+
+                    <FaFilter className="me-2" />
+
+                    Filters
+
+                  </h4>
+
+                  <p>
+                    Find your perfect product
+                  </p>
+
+                </div>
+
+
+                <form
+                  onSubmit={
+                    handleFilter
+                  }
+                >
+
+
+                  {/* ======================================= */}
+                  {/* SEARCH */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+                      Search Product
+                    </label>
+
+                    <div className="filter-search">
+
+                      <FaSearch />
+
+                      <input
+                        type="text"
+                        placeholder="Product name..."
+                        value={search}
+                        onChange={(
+                          event
+                        ) =>
+                          setSearch(
+                            event.target
+                              .value
+                          )
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* CATEGORY */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+
+                      <FaLayerGroup className="me-2" />
+
+                      Category
+
+                    </label>
+
+                    <select
+                      value={
+                        categoryId
+                      }
+                      onChange={
+                        handleCategoryChange
+                      }
+                    >
+
+                      <option value="">
+                        All Categories
+                      </option>
+
+                      {categories.map(
+                        (category) => (
+
+                          <option
+                            key={
+                              category.id
+                            }
+                            value={
+                              category.id
+                            }
+                          >
+
+                            {
+                              category.name
+                            }
+
+                          </option>
+
+                        )
+                      )}
+
+                    </select>
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* SUBCATEGORY */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+
+                      <FaList className="me-2" />
+
+                      Subcategory
+
+                    </label>
+
+
+                    {/* No Category Selected */}
+
+                    {!categoryId && (
+
+                      <select
+                        disabled
+                        value=""
+                      >
+
+                        <option value="">
+
+                          Select a category first
+
+                        </option>
+
+                      </select>
+
+                    )}
+
+
+                    {/* Category Selected */}
+
+                    {categoryId && (
+
+                      <select
+                        value={
+                          subcategoryId
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setSubcategoryId(
+                            event.target
+                              .value
+                          )
+                        }
+                      >
+
+                        <option value="">
+
+                          All Subcategories
+
+                        </option>
+
+
+                        {filteredSubcategories.map(
+                          (
+                            subcategory
+                          ) => (
+
+                            <option
+                              key={
+                                subcategory.id
+                              }
+                              value={
+                                subcategory.id
+                              }
+                            >
+
+                              {
+                                subcategory.name
+                              }
+
+                            </option>
+
+                          )
+                        )}
+
+                      </select>
+
+                    )}
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* BRAND */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+
+                      <FaTag className="me-2" />
+
+                      Brand
+
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="Example: Apple"
+                      value={brand}
+                      onChange={(
+                        event
+                      ) =>
+                        setBrand(
+                          event.target
+                            .value
+                        )
+                      }
+                    />
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* COLOR */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+
+                      <FaPalette className="me-2" />
+
+                      Color
+
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="Example: Black"
+                      value={color}
+                      onChange={(
+                        event
+                      ) =>
+                        setColor(
+                          event.target
+                            .value
+                        )
+                      }
+                    />
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* SIZE */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+                      Size
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="Example: M"
+                      value={size}
+                      onChange={(
+                        event
+                      ) =>
+                        setSize(
+                          event.target
+                            .value
+                        )
+                      }
+                    />
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* PRICE RANGE */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+                      Price Range
+                    </label>
+
+                    <div className="price-inputs">
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Min"
+                        value={
+                          minPrice
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setMinPrice(
+                            event.target
+                              .value
+                          )
+                        }
+                      />
+
+                      <span>
+                        -
+                      </span>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Max"
+                        value={
+                          maxPrice
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setMaxPrice(
+                            event.target
+                              .value
+                          )
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* RATING */}
+                  {/* ======================================= */}
+
+                  <div className="filter-group">
+
+                    <label>
+
+                      Minimum Rating
+
+                    </label>
+
+                    <select
+                      value={
+                        minRating
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setMinRating(
+                          event.target
+                            .value
+                        )
+                      }
+                    >
+
+                      <option value="">
+                        Any Rating
+                      </option>
+
+                      <option value="4">
+                        4 ★ & above
+                      </option>
+
+                      <option value="3">
+                        3 ★ & above
+                      </option>
+
+                      <option value="2">
+                        2 ★ & above
+                      </option>
+
+                      <option value="1">
+                        1 ★ & above
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  {/* ======================================= */}
+                  {/* FILTER BUTTONS */}
+                  {/* ======================================= */}
+
+                  <div className="filter-actions">
+
+                    <button
+                      type="submit"
+                      className="apply-filter-btn"
+                    >
+
+                      <FaSearch className="me-2" />
+
+                      Apply Filters
+
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="clear-filter-btn"
+                      onClick={
+                        clearFilters
+                      }
+                    >
+
+                      <FaTimes className="me-2" />
+
+                      Clear Filters
+
+                    </button>
+
+                  </div>
+
+                </form>
+
+              </div>
+
+            </div>
+
+
+            {/* ================================================= */}
+            {/* RIGHT PRODUCT AREA */}
+            {/* ================================================= */}
+
+            <div className="col-12 col-lg-9">
+
+
+              {/* ======================================= */}
+              {/* PRODUCT TOP BAR */}
+              {/* ======================================= */}
+
+              <div className="products-top-bar">
+
+                <div>
+
+                  <h3>
+
+                    {selectedSubcategory
+                      ? selectedSubcategory.name
+                      : selectedCategory
+                      ? selectedCategory.name
+                      : "All Products"}
+
+                  </h3>
+
+                  <p>
+
+                    {loading
+                      ? "Loading products..."
+                      : `${products.length} product${
+                          products.length !==
+                          1
+                            ? "s"
+                            : ""
+                        } found`}
+
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {/* ======================================= */}
+              {/* LOADING */}
+              {/* ======================================= */}
+
+              {loading && (
+
+                <div className="product-loading">
+
+                  <div
+                    className="spinner-border text-primary"
+                    role="status"
+                  ></div>
+
+                  <p>
+                    Loading products...
+                  </p>
+
+                </div>
+
+              )}
+
+
+              {/* ======================================= */}
+              {/* NO PRODUCTS */}
+              {/* ======================================= */}
+
+              {!loading &&
+                products.length ===
+                  0 && (
+
+                  <div className="no-products">
+
+                    <FaBoxOpen />
+
+                    <h4>
+                      No Products Found
+                    </h4>
+
+                    <p>
+
+                      We could not find
+                      products matching your
+                      selected filters.
+
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={
+                        clearFilters
+                      }
+                    >
+
+                      Clear Filters
+
+                    </button>
+
+                  </div>
+
+                )}
+
+
+              {/* ======================================= */}
+              {/* PRODUCTS GRID */}
+              {/* ======================================= */}
+
+              {!loading &&
+                products.length > 0 && (
+
+                  <div className="row g-4">
+
+                    {products.map(
+                      (product) => (
+
+                        <div
+                          className="col-12 col-md-6 col-xl-4"
+                          key={
+                            product.id
+                          }
+                        >
+
+                          <div className="product-card">
+
+
+                            {/* ======================= */}
+                            {/* IMAGE */}
+                            {/* ======================= */}
+
+                            <div className="product-image-area">
+
+                              <img
+                                src={getImageSrc(
+                                  product.image
+                                )}
+                                alt={
+                                  product.name
+                                }
+                                onError={(
+                                  event
+                                ) => {
+
+                                  event.currentTarget.src =
+                                    "/images/products/placeholder.svg";
+
+                                }}
+                              />
+
+
+                              {/* ======================= */}
+                              {/* WISHLIST */}
+                              {/* ======================= */}
+
+                              <button
+                                type="button"
+                                aria-label="Add to wishlist"
+                                className={`wishlist-button ${
+                                  wishlistState[
+                                    product.id
+                                  ]
+                                    ? "wishlist-active"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  toggleWishlist(
+                                    product.id
+                                  )
+                                }
+                              >
+
+                                <FaHeart />
+
+                              </button>
+
+
+                              {/* ======================= */}
+                              {/* CATEGORY BADGE */}
+                              {/* ======================= */}
+
+                              {product.category && (
+
+                                <span className="category-badge">
+
+                                  {
+                                    product
+                                      .category
+                                      .name
+                                  }
+
+                                </span>
+
+                              )}
+
+                            </div>
+
+
+                            {/* ======================= */}
+                            {/* PRODUCT BODY */}
+                            {/* ======================= */}
+
+                            <div className="product-card-body">
+
+
+                              {/* BRAND */}
+
+                              <div className="product-brand">
+
+                                {product.brand ||
+                                  "ShopEase"}
+
+                              </div>
+
+
+                              {/* NAME */}
+
+                              <h5>
+
+                                {
+                                  product.name
+                                }
+
+                              </h5>
+
+
+                              {/* RATING */}
+
+                              <div className="product-rating">
+
+                                <FaStar />
+
+                                <span>
+
+                                  {Number(
+                                    product.rating ||
+                                      0
+                                  ).toFixed(
+                                    1
+                                  )}
+
+                                </span>
+
+                              </div>
+
+
+                              {/* DESCRIPTION */}
+
+                              <p className="product-description">
+
+                                {product.description ||
+                                  "Quality product available at ShopEase."}
+
+                              </p>
+
+
+                              {/* ======================= */}
+                              {/* SUBCATEGORY LABEL */}
+                              {/* ======================= */}
+
+                              {product.subcategory && (
+
+                                <div className="product-details-row">
+
+                                  <span>
+
+                                    {
+                                      product
+                                        .subcategory
+                                        .name
+                                    }
+
+                                  </span>
+
+                                </div>
+
+                              )}
+
+
+                              {/* ======================= */}
+                              {/* COLOR / SIZE */}
+                              {/* ======================= */}
+
+                              <div className="product-details-row">
+
+                                {product.color && (
+
+                                  <span>
+
+                                    Color:{" "}
+                                    {
+                                      product.color
+                                    }
+
+                                  </span>
+
+                                )}
+
+                                {product.size && (
+
+                                  <span>
+
+                                    Size:{" "}
+                                    {
+                                      product.size
+                                    }
+
+                                  </span>
+
+                                )}
+
+                              </div>
+
+
+                              {/* ======================= */}
+                              {/* STOCK */}
+                              {/* ======================= */}
+
+                              <div
+                                className={`stock-status ${
+                                  product.stock >
+                                  0
+                                    ? "in-stock"
+                                    : "out-stock"
+                                }`}
+                              >
+
+                                {product.stock >
+                                0
+                                  ? `${product.stock} in stock`
+                                  : "Out of stock"}
+
+                              </div>
+
+
+                              {/* ======================= */}
+                              {/* PRICE / DETAILS */}
+                              {/* ======================= */}
+
+                              <div className="product-card-bottom">
+
+                                <div className="product-price">
+
+                                  <span>
+                                    $
+                                  </span>
+
+                                  {Number(
+                                    product.price
+                                  ).toFixed(
+                                    2
+                                  )}
+
+                                </div>
+
+
+                                <Link
+                                  to={`/products/${product.id}`}
+                                  className="view-product-btn"
+                                >
+
+                                  View Details
+
+                                </Link>
+
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                      )
+                    )}
+
+                  </div>
+
+                )}
+
+            </div>
+
+          </div>
+
+        </section>
+
       </main>
 
       <Footer />
-    </div>
+
+    </>
   );
 }
 
