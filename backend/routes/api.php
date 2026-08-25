@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\DemoPaymentController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();

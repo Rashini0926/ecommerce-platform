@@ -243,6 +243,10 @@ function Login() {
                       </button>
                     </form>
 
+                    <div className="text-end mt-2">
+                      <Link to="/forgot-password">Forgot password?</Link>
+                    </div>
+
                     <div className="mt-4 pt-3 border-top text-center">
                       <small className="text-muted d-block mb-2">Demo Account Quick Fill:</small>
                       <button
