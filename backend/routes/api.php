@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductReviewController;
 
 // use App\Http\Controllers\Api\OrderController;
 
@@ -38,6 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store']);
+    Route::delete('/products/{product}/reviews/{review}', [ProductReviewController::class, 'destroy']);
     Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus']);
 
@@ -63,6 +66,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/products/{product}/reviews', [ProductReviewController::class, 'index']);
 
 Route::get('/test', function () {
     return response()->json([
