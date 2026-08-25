@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -63,6 +65,43 @@ class AuthController extends Controller
             'token' => $token,
             'user' => $user,
         ]);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'success' => $status === Password::RESET_LINK_SENT,
+            'message' => $status === Password::RESET_LINK_SENT
+                ? 'Password reset link sent. Check the configured mail inbox or Laravel log.'
+                : 'Unable to send a password reset link for that email address.',
+        ], $status === Password::RESET_LINK_SENT ? 200 : 422);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $credentials = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset($credentials, function (User $user, string $password) {
+            $user->forceFill([
+                'password' => $password,
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            $user->tokens()->delete();
+        });
+
+        return response()->json([
+            'success' => $status === Password::PASSWORD_RESET,
+            'message' => __($status),
+        ], $status === Password::PASSWORD_RESET ? 200 : 422);
     }
 
     // Profile

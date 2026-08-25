@@ -38,3 +38,13 @@ export const logoutUser = async (token) => {
 
     return response.data;
 };
+
+export const requestPasswordReset = async (email) => {
+    const response = await api.post("/forgot-password", { email });
+    return response.data;
+};
+
+export const resetPassword = async (data) => {
+    const response = await api.post("/reset-password", data);
+    return response.data;
+};

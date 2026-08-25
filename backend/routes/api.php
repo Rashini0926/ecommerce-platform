@@ -10,11 +10,14 @@ use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\DemoPaymentController;
+use App\Http\Controllers\Api\SellerOrderController;
 
 // use App\Http\Controllers\Api\OrderController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -50,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/admin/orders/{order}/shipping', [OrderController::class, 'updateShipping']);
 
     Route::get('/seller/products', [ProductController::class, 'mine']);
+    Route::get('/seller/order-items', [SellerOrderController::class, 'index']);
+    Route::patch('/seller/order-items/{orderItem}/fulfillment', [SellerOrderController::class, 'updateStatus']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);

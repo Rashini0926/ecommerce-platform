@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Contracts\PaymentGateway;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class DemoPaymentController extends Controller
 {
+    public function __construct(private PaymentGateway $gateway)
+    {
+    }
+
     public function initiate(Request $request, Order $order): JsonResponse
     {
         $this->ensureOwner($request, $order);
@@ -32,7 +37,7 @@ class DemoPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Demo payment initiated. No real money will be charged.',
+            'message' => $this->gateway->initiate($payment)['message'],
             'payment' => $payment->fresh(),
         ]);
     }
@@ -50,8 +55,10 @@ class DemoPaymentController extends Controller
             return response()->json(['success' => true, 'message' => 'Payment is already complete.', 'payment' => $payment]);
         }
 
-        DB::transaction(function () use ($payment, $order) {
-            $payment->update(['status' => 'PAID', 'paid_at' => now()]);
+        $result = $this->gateway->complete($payment);
+
+        DB::transaction(function () use ($payment, $order, $result) {
+            $payment->update(['status' => $result['status'], 'paid_at' => $result['paid_at']]);
             $order->update(['payment_status' => 'PAID']);
         });
 
