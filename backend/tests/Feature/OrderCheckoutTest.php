@@ -39,7 +39,7 @@ class OrderCheckoutTest extends TestCase
         $this->assertSame(7, $product->fresh()->stock);
     }
 
-    public function test_card_checkout_marks_the_demo_payment_as_paid(): void
+    public function test_card_checkout_starts_with_a_pending_payment(): void
     {
         [$customer] = $this->createCheckoutData();
 
@@ -48,7 +48,7 @@ class OrderCheckoutTest extends TestCase
         $this->postJson('/api/orders', [
             'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
             'payment_method' => 'CARD',
-        ])->assertCreated()->assertJsonPath('order.payment_status', 'PAID');
+        ])->assertCreated()->assertJsonPath('order.payment_status', 'PENDING');
     }
 
     private function createCheckoutData(): array

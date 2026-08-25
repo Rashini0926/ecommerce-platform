@@ -55,12 +55,11 @@ class OrderController extends Controller
                 $product->decrement('stock', $cartItem->quantity);
             }
 
-            $isCardPayment = $validated['payment_method'] === 'CARD';
             $order = $request->user()->orders()->create([
                 'order_number' => $this->generateOrderNumber(),
                 'shipping_address' => $validated['shipping_address'],
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => $isCardPayment ? 'PAID' : 'PENDING',
+                'payment_status' => 'PENDING',
                 'total_amount' => $totalAmount,
                 'order_status' => 'PROCESSING',
             ]);
