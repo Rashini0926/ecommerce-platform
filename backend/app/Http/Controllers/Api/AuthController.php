@@ -118,6 +118,30 @@ class AuthController extends Controller
         ]);
     }
 
+    public function updateProfile(Request $request)
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:20'],
+        ]);
+        $request->user()->update($data);
+        return response()->json(['success' => true, 'message' => 'Profile updated successfully.', 'user' => $request->user()->fresh()]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+        if (!Hash::check($data['current_password'], $request->user()->password)) {
+            return response()->json(['success' => false, 'message' => 'Current password is incorrect.'], 422);
+        }
+        $request->user()->update(['password' => $data['password']]);
+        $request->user()->tokens()->delete();
+        return response()->json(['success' => true, 'message' => 'Password changed. Please log in again.']);
+    }
+
     // Logout
     public function logout(Request $request)
     {
