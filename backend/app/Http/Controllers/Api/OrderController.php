@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +72,7 @@ class OrderController extends Controller
         });
 
         $order->load('items.product');
+        $this->notifyCustomer($order, 'ORDER', 'Order placed successfully', "Your order {$order->order_number} is now being processed.");
 
         return response()->json([
             'success' => true,
@@ -111,6 +113,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
         $this->ensureAdmin($request);
+        $previousStatus = $order->order_status;
 
         $validated = $request->validate([
             'order_status' => ['required', Rule::in(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
@@ -139,6 +142,10 @@ class OrderController extends Controller
             ]);
         });
 
+        if ($previousStatus !== $validated['order_status']) {
+            $this->notifyCustomer($order, 'ORDER_STATUS', 'Order status updated', "Your order {$order->order_number} is now {$validated['order_status']}.");
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Order status updated successfully.',
@@ -165,6 +172,7 @@ class OrderController extends Controller
             'order_status' => 'SHIPPED',
             'shipped_at' => $order->shipped_at ?? now(),
         ]);
+        $this->notifyCustomer($order, 'SHIPPING', 'Your order has shipped', "Your order {$order->order_number} is with {$data['courier_name']}. Tracking number: {$data['tracking_number']}.");
 
         return response()->json([
             'success' => true,
@@ -262,5 +270,16 @@ class OrderController extends Controller
         } while (Order::where('order_number', $orderNumber)->exists());
 
         return $orderNumber;
+    }
+
+    private function notifyCustomer(Order $order, string $type, string $title, string $message): void
+    {
+        UserNotification::create([
+            'user_id' => $order->user_id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'data' => ['order_id' => $order->id, 'order_number' => $order->order_number],
+        ]);
     }
 }
