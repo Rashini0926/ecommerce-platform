@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { addToCart } from '../services/customerService';
 
 function ProductDetails() {
   const { id } = useParams();
@@ -7,6 +10,10 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const { token, user } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -22,9 +29,29 @@ function ProductDetails() {
       });
   }, [id]);
 
-  const handleAddToCart = () => {
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+  const handleAddToCart = async () => {
+    if (!token) {
+      showToast('Please log in as a customer to add products to your cart.', 'info');
+      navigate('/login');
+      return;
+    }
+
+    if (user?.role !== 'customer') {
+      showToast('Only customer accounts can use the shopping cart.', 'warning');
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addToCart(token, product.id, quantity);
+      setAdded(true);
+      showToast('Product added to cart.', 'success');
+      setTimeout(() => setAdded(false), 2000);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Unable to add product to cart.', 'danger');
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const placeholderImage = `${import.meta.env.BASE_URL}images/products/placeholder.svg`;
@@ -310,6 +337,7 @@ function ProductDetails() {
 
                 <button
                   onClick={handleAddToCart}
+                  disabled={isAdding || product.stock < 1}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 12px 26px rgba(37, 99, 235, 0.26)';
@@ -331,7 +359,7 @@ function ProductDetails() {
                     boxShadow: '0 10px 22px rgba(37, 99, 235, 0.2)',
                   }}
                 >
-                  {added ? '✓ Added to Cart' : 'Add to Cart'}
+                  {isAdding ? 'Adding...' : added ? '✓ Added to Cart' : product.stock < 1 ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
             </div>

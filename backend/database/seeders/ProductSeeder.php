@@ -11,12 +11,11 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $electronics = Category::where('name', 'Electronics')->first();
-        $mobilePhones = Subcategory::where('name', 'Mobile Phones')->first();
-        $laptops = Subcategory::where('name', 'Laptops')->first();
-
-        $fashion = Category::where('name', 'Fashion')->first();
-        $men = Subcategory::where('name', 'Men')->first();
+        $electronics = Category::firstOrCreate(['name' => 'Electronics']);
+        $fashion = Category::firstOrCreate(['name' => 'Fashion']);
+        $mobilePhones = Subcategory::firstOrCreate(['category_id' => $electronics->id, 'name' => 'Mobile Phones']);
+        $laptops = Subcategory::firstOrCreate(['category_id' => $electronics->id, 'name' => 'Laptops']);
+        $men = Subcategory::firstOrCreate(['category_id' => $fashion->id, 'name' => 'Men']);
 
         $products = [
             [
@@ -74,7 +73,7 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::create($product);
+            Product::updateOrCreate(['name' => $product['name']], $product);
         }
     }
 }
