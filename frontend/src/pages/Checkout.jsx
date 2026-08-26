@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { getCart } from "../services/customerService";
 import { createOrder } from "../services/orderService";
+import api from "../utils/api";
 
 const formatPrice = (amount) => `Rs. ${Number(amount || 0).toLocaleString("en-LK")}`;
 
@@ -16,6 +17,7 @@ function Checkout() {
   const [isLoading, setIsLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addresses, setAddresses] = useState([]);
   const [deliveryDetails, setDeliveryDetails] = useState({
     fullName: user?.full_name || "",
     phone: user?.phone || "",
@@ -26,8 +28,9 @@ function Checkout() {
   useEffect(() => {
     const loadCart = async () => {
       try {
-        const response = await getCart(token);
+        const [response, addressResponse] = await Promise.all([getCart(token), api.get("/addresses", { headers: { Authorization: `Bearer ${token}` } })]);
         setCartItems(response.items || []);
+        setAddresses(addressResponse.data.addresses || []);
       } catch (error) {
         showToast(error.response?.data?.message || "Could not load your cart.", "danger");
       } finally {
@@ -46,6 +49,8 @@ function Checkout() {
   const updateDeliveryDetail = (event) => {
     setDeliveryDetails({ ...deliveryDetails, [event.target.name]: event.target.value });
   };
+
+  const selectAddress = (address) => setDeliveryDetails({ fullName: address.recipient_name, phone: address.phone, city: "", address: address.address });
 
   const placeOrder = async () => {
     if (Object.values(deliveryDetails).some((value) => !value.trim())) {
@@ -93,7 +98,7 @@ function Checkout() {
     <h2 className="fw-bold mb-4">Checkout</h2>
     <div className="row g-4">
       <div className="col-lg-7">
-        <div className="card shadow-sm border-0"><div className="card-body p-4"><h4 className="mb-4">Delivery Information</h4><div className="row g-3">
+        <div className="card shadow-sm border-0"><div className="card-body p-4"><h4 className="mb-4">Delivery Information</h4>{addresses.length > 0 && <div className="mb-3"><label className="form-label">Saved address</label><select className="form-select" defaultValue="" onChange={(e) => { const item = addresses.find((address) => address.id === Number(e.target.value)); if (item) selectAddress(item); }}><option value="">Enter a new address</option>{addresses.map((address) => <option key={address.id} value={address.id}>{address.label} — {address.address}</option>)}</select></div>}<div className="row g-3">
           <div className="col-md-6"><label className="form-label">Full Name</label><input required name="fullName" className="form-control" value={deliveryDetails.fullName} onChange={updateDeliveryDetail} /></div>
           <div className="col-md-6"><label className="form-label">Phone Number</label><input required name="phone" className="form-control" value={deliveryDetails.phone} onChange={updateDeliveryDetail} /></div>
           <div className="col-12"><label className="form-label">City</label><input required name="city" className="form-control" value={deliveryDetails.city} onChange={updateDeliveryDetail} /></div>
