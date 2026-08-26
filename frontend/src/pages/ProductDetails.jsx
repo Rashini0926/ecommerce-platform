@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { addToCart } from '../services/customerService';
 import { getProduct } from '../services/productService';
+import api from '../utils/api';
 
 function ProductDetails() {
   const { id } = useParams();
@@ -12,6 +13,8 @@ function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [review, setReview] = useState({ rating: 5, comment: '' });
   const { token, user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -28,6 +31,20 @@ function ProductDetails() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    api.get(`/products/${id}/reviews`).then((response) => setReviews(response.data.data || [])).catch(() => setReviews([]));
+  }, [id]);
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    if (!token) return navigate('/login');
+    try {
+      const response = await api.post(`/products/${id}/reviews`, review, { headers: { Authorization: `Bearer ${token}` } });
+      setReviews((items) => [response.data.review, ...items.filter((item) => item.user_id !== response.data.review.user_id)]);
+      setReview({ rating: 5, comment: '' }); showToast('Review saved successfully.', 'success');
+    } catch (err) { showToast(err.response?.data?.errors?.product?.[0] || 'Unable to save review.', 'danger'); }
+  };
 
   const handleAddToCart = async () => {
     if (!token) {
@@ -366,14 +383,12 @@ function ProductDetails() {
           </div>
         </div>
 
-        {/* Reviews placeholder */}
         <div className="mt-5 pt-4" style={{ borderTop: '1px solid #e7eefb' }}>
           <h5 className="fw-bold mb-3" style={{ color: '#0f172a' }}>
             Reviews
           </h5>
-          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: 0 }}>
-            No reviews yet for this product.
-          </p>
+          {user?.role === 'customer' && <form className="card card-body mb-3" onSubmit={submitReview}><div className="row g-2"><div className="col-md-2"><select className="form-select" value={review.rating} onChange={(e) => setReview({ ...review, rating: Number(e.target.value) })}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}</select></div><div className="col-md-8"><input className="form-control" value={review.comment} onChange={(e) => setReview({ ...review, comment: e.target.value })} placeholder="Share your experience (optional)" /></div><div className="col-md-2"><button className="btn btn-primary w-100">Submit</button></div></div></form>}
+          {reviews.length === 0 ? <p style={{ fontSize: '14px', color: '#64748b', marginBottom: 0 }}>No reviews yet for this product.</p> : reviews.map((item) => <article className="card card-body mb-2" key={item.id}><strong>{item.user?.full_name || 'Customer'} · {item.rating} ★</strong><span className="text-muted">{item.comment || 'No written comment.'}</span></article>)}
         </div>
       </div>
     </div>
