@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\DemoPaymentController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\SellerOrderController;
 
 // use App\Http\Controllers\Api\OrderController;
@@ -31,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::patch('/profile', [AuthController::class, 'updateProfile']);
     Route::patch('/profile/password', [AuthController::class, 'changePassword']);
+    Route::get('/addresses', [AddressController::class, 'index']); Route::post('/addresses', [AddressController::class, 'store']); Route::put('/addresses/{address}', [AddressController::class, 'update']); Route::delete('/addresses/{address}', [AddressController::class, 'destroy']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/notifications', [NotificationController::class, 'index']);
