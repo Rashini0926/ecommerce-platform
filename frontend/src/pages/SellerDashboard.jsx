@@ -16,6 +16,7 @@ export default function SellerDashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -44,6 +45,15 @@ export default function SellerDashboard() {
     ["Order value", money(metrics.revenue), "Seller order items", <FaWallet />, "dark"],
   ];
 
+  const updateFulfillment = async (item, fulfillment_status) => {
+    setUpdatingId(item.id);
+    try {
+      const response = await api.patch(`/seller/order-items/${item.id}/fulfillment`, { fulfillment_status }, { headers: { Authorization: `Bearer ${token}` } });
+      setItems((current) => current.map((entry) => entry.id === item.id ? response.data.order_item : entry));
+    } catch (err) { setError(err.response?.data?.message || "Unable to update fulfillment status."); }
+    finally { setUpdatingId(null); }
+  };
+
   return <div className="app-page bg-light-subtle min-vh-100"><Navbar /><main className="container py-4 py-lg-5">
     <section className="rounded-4 p-4 p-lg-5 mb-4 text-white shadow-sm" style={{ background: "linear-gradient(135deg,#0f766e,#115e59 55%,#0f172a)" }}>
       <div className="d-flex flex-column flex-lg-row justify-content-between gap-4 align-items-lg-center"><div><span className="badge text-bg-light text-success mb-3"><FaStore className="me-2" />Seller workspace</span><h1 className="h2 mb-2">Good to see you, {user?.full_name || "Seller"}</h1><p className="mb-0 text-white-50">Manage your catalog, fulfillment queue, and stock from one place.</p></div><Link to="/seller/products" className="btn btn-light fw-semibold px-4"><FaPlus className="me-2" />Manage products</Link></div>
@@ -51,7 +61,7 @@ export default function SellerDashboard() {
     {error && <div className="alert alert-danger">{error}</div>}
     {loading ? <div className="text-center py-5"><LoadingSpinner size="lg" text="Loading seller workspace..." /></div> : <>
       <section className="row g-3 mb-4">{cards.map(([label, value, note, icon, tone]) => <div className="col-sm-6 col-xl-3" key={label}><article className="card h-100 border-0 shadow-sm"><div className="card-body p-4"><div className={`text-${tone} fs-4 mb-3`}>{icon}</div><div className="text-muted small mb-1">{label}</div><div className="h3 mb-1">{value}</div><small className="text-muted">{note}</small></div></article></div>)}</section>
-      <section className="row g-4"><div className="col-lg-8"><article className="card border-0 shadow-sm h-100"><div className="card-body p-4"><h2 className="h5 mb-1">Fulfillment queue</h2><p className="text-muted small mb-4">Latest customer orders containing your products.</p>{items.length === 0 ? <div className="text-center py-5 text-muted"><FaClipboardList className="fs-2 mb-3" /><p className="mb-0">No seller orders yet.</p></div> : <div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Order</th><th>Product</th><th>Customer</th><th>Status</th><th className="text-end">Amount</th></tr></thead><tbody>{items.slice(0, 6).map((item) => <tr key={item.id}><td><strong>{item.order?.order_number}</strong><br /><small className="text-muted">Qty: {item.quantity}</small></td><td>{item.product_name}</td><td>{item.order?.user?.full_name || "Customer"}</td><td><span className={`badge ${item.fulfillment_status === "SHIPPED" ? "text-bg-success" : item.fulfillment_status === "READY_TO_SHIP" ? "text-bg-warning" : "text-bg-secondary"}`}>{item.fulfillment_status?.replaceAll("_", " ")}</span></td><td className="text-end fw-semibold">{money(item.subtotal)}</td></tr>)}</tbody></table></div>}</div></article></div>
+      <section className="row g-4"><div className="col-lg-8"><article className="card border-0 shadow-sm h-100"><div className="card-body p-4"><h2 className="h5 mb-1">Fulfillment queue</h2><p className="text-muted small mb-4">Latest customer orders containing your products.</p>{items.length === 0 ? <div className="text-center py-5 text-muted"><FaClipboardList className="fs-2 mb-3" /><p className="mb-0">No seller orders yet.</p></div> : <div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Order</th><th>Product</th><th>Customer</th><th>Status</th><th>Action</th><th className="text-end">Amount</th></tr></thead><tbody>{items.slice(0, 6).map((item) => <tr key={item.id}><td><strong>{item.order?.order_number}</strong><br /><small className="text-muted">Qty: {item.quantity}</small></td><td>{item.product_name}</td><td>{item.order?.user?.full_name || "Customer"}</td><td><span className={`badge ${item.fulfillment_status === "SHIPPED" ? "text-bg-success" : item.fulfillment_status === "READY_TO_SHIP" ? "text-bg-warning" : "text-bg-secondary"}`}>{item.fulfillment_status?.replaceAll("_", " ")}</span></td><td><select className="form-select form-select-sm" disabled={updatingId === item.id || item.fulfillment_status === "SHIPPED"} value={item.fulfillment_status} onChange={(event) => updateFulfillment(item, event.target.value)}><option value="PROCESSING">PROCESSING</option><option value="READY_TO_SHIP">READY TO SHIP</option><option value="SHIPPED">SHIPPED</option></select></td><td className="text-end fw-semibold">{money(item.subtotal)}</td></tr>)}</tbody></table></div>}</div></article></div>
       <div className="col-lg-4"><article className="card border-0 shadow-sm mb-4"><div className="card-body p-4"><h2 className="h5 mb-3">Inventory attention</h2>{metrics.lowStock === 0 ? <p className="text-success mb-0">All products have healthy stock levels.</p> : products.filter((product) => Number(product.stock) <= 5).slice(0, 5).map((product) => <div className="d-flex gap-3 py-3 border-top" key={product.id}><FaExclamationTriangle className="text-warning mt-1" /><div><div className="fw-semibold">{product.name}</div><small className="text-muted">Only {product.stock} units remaining</small></div></div>)}</div></article><article className="card border-0 shadow-sm"><div className="card-body p-4"><h2 className="h5 mb-3">Quick actions</h2><div className="d-grid gap-2"><Link to="/seller/products" className="btn btn-success">Add or edit product</Link><Link to="/notifications" className="btn btn-outline-secondary">View notifications</Link></div></div></article></div></section>
     </>}
   </main><Footer /></div>;
