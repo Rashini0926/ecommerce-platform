@@ -7,6 +7,8 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\UserNotification;
+use App\Mail\OrderUpdateMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -281,5 +283,8 @@ class OrderController extends Controller
             'message' => $message,
             'data' => ['order_id' => $order->id, 'order_number' => $order->order_number],
         ]);
+
+        $order->loadMissing('user');
+        Mail::to($order->user->email)->queue(new OrderUpdateMail($order, $title, $message));
     }
 }
