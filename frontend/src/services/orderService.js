@@ -24,6 +24,12 @@ export const getOrder = async (token, orderId) => {
   return response.data;
 };
 
+export const getOrderTracking = async (token, orderId) => {
+  const response = await api.get(`/orders/${orderId}/tracking`, authConfig(token));
+
+  return response.data;
+};
+
 export const cancelOrder = async (token, orderId) => {
   const response = await api.patch(`/orders/${orderId}/cancel`, {}, authConfig(token));
 
