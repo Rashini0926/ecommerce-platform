@@ -51,3 +51,13 @@ export const updateOrderStatus = async (token, orderId, orderStatus) => {
 
   return response.data;
 };
+
+export const updateShipping = async (token, orderId, shippingData) => {
+  const response = await api.patch(
+    `/admin/orders/${orderId}/shipping`,
+    shippingData,
+    authConfig(token)
+  );
+
+  return response.data;
+};
