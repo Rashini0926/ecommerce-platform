@@ -33,7 +33,10 @@ class Product extends Model
 
     public function seller()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 
     public function subcategory()
@@ -45,21 +48,29 @@ class Product extends Model
 
     public function wishlistItems()
     {
-        return $this->hasMany(WishlistItem::class);
+        return $this->hasMany(
+            WishlistItem::class
+        );
     }
 
     public function cartItems()
     {
-        return $this->hasMany(CartItem::class);
+        return $this->hasMany(
+            CartItem::class
+        );
     }
 
     public function orderItems()
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(
+            OrderItem::class
+        );
     }
 
     public function reviews()
     {
-        return $this->hasMany(ProductReview::class);
+        return $this->hasMany(
+            Review::class
+        );
     }
 }

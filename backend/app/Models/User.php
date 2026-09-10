@@ -33,26 +33,43 @@ class User extends Authenticatable
 
     public function wishlistItems()
     {
-        return $this->hasMany(WishlistItem::class);
+        return $this->hasMany(
+            WishlistItem::class
+        );
     }
 
     public function cartItems()
     {
-        return $this->hasMany(CartItem::class);
+        return $this->hasMany(
+            CartItem::class
+        );
     }
 
     public function products()
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(
+            Product::class
+        );
     }
 
     public function orders()
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(
+            Order::class
+        );
     }
 
     public function productReviews()
     {
-        return $this->hasMany(ProductReview::class);
+        return $this->hasMany(
+            ProductReview::class
+        );
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(
+            Review::class
+        );
     }
 }
