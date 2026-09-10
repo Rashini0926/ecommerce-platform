@@ -1,64 +1,110 @@
-<<<<<<< Updated upstream
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getCategories } from '../../services/productService';
-=======
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
->>>>>>> Stashed changes
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  getCategories,
+} from "../../services/productService";
 
 function Categories() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [categories, setCategories] =
-    useState([]);
+  /*
+  |--------------------------------------------------------------------------
+  | STATES
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    categories,
+    setCategories,
+  ] = useState([]);
 
   const [
     activeCategory,
     setActiveCategory,
   ] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   /*
   |--------------------------------------------------------------------------
-  | FETCH CATEGORIES
+  | LOAD CATEGORIES
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-<<<<<<< Updated upstream
-    getCategories()
-=======
-    fetch(
-      "http://127.0.0.1:8000/api/categories"
-    )
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(
-            "Failed to load categories."
+    const loadCategories =
+      async () => {
+
+        try {
+          setLoading(true);
+
+          setError("");
+
+          /*
+           * Load categories
+           * from productService.
+           */
+          const data =
+            await getCategories();
+
+          /*
+           * Support:
+           *
+           * [...]
+           *
+           * OR
+           *
+           * {
+           *   categories: [...]
+           * }
+           */
+          const categoryList =
+            Array.isArray(data)
+              ? data
+              : data?.categories || [];
+
+          setCategories(
+            categoryList
           );
+
+        } catch (err) {
+
+          console.error(
+            "Failed to load categories:",
+            err
+          );
+
+          setCategories([]);
+
+          setError(
+            "Unable to load categories."
+          );
+
+        } finally {
+
+          setLoading(false);
+
         }
+      };
 
-        return res.json();
-      })
+    loadCategories();
 
->>>>>>> Stashed changes
-      .then((data) => {
-        setCategories(data);
-
-        setLoading(false);
-      })
-
-      .catch((err) => {
-        console.error(
-          "Failed to load categories:",
-          err
-        );
-
-        setLoading(false);
-      });
   }, []);
 
   /*
@@ -69,6 +115,11 @@ function Categories() {
 
   const handleCategoryClick =
     (category) => {
+
+      if (!category?.id) {
+        return;
+      }
+
       navigate(
         `/products?category_id=${category.id}`
       );
@@ -86,11 +137,19 @@ function Categories() {
       category,
       subcategory
     ) => {
+
       /*
-       * Stop category card
-       * click from also running.
+       * Prevent the category card
+       * click from firing.
        */
       event.stopPropagation();
+
+      if (
+        !category?.id ||
+        !subcategory?.id
+      ) {
+        return;
+      }
 
       navigate(
         `/products?category_id=${category.id}&subcategory_id=${subcategory.id}`
@@ -106,13 +165,66 @@ function Categories() {
   if (loading) {
     return (
       <section className="container py-5">
-        <h2 className="text-center mb-4">
-          Shop by Category
-        </h2>
 
-        <p className="text-center text-muted">
-          Loading categories...
-        </p>
+        <div className="text-center mb-5">
+
+          <h2 className="fw-bold mb-2">
+            Shop by Category
+          </h2>
+
+          <p className="text-muted">
+            Explore our wide range of products
+          </p>
+
+        </div>
+
+        <div className="text-center py-4">
+
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            aria-label="Loading categories"
+          />
+
+          <p className="text-muted mt-3 mb-0">
+            Loading categories...
+          </p>
+
+        </div>
+
+      </section>
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ERROR
+  |--------------------------------------------------------------------------
+  */
+
+  if (error) {
+    return (
+      <section className="container py-5">
+
+        <div className="text-center mb-5">
+
+          <h2 className="fw-bold mb-2">
+            Shop by Category
+          </h2>
+
+          <p className="text-muted">
+            Explore our wide range of products
+          </p>
+
+        </div>
+
+        <div
+          className="alert alert-danger text-center"
+          role="alert"
+        >
+          {error}
+        </div>
+
       </section>
     );
   }
@@ -126,7 +238,9 @@ function Categories() {
   return (
     <section className="container py-5">
 
-      {/* HEADER */}
+      {/* ================================================================
+          HEADER
+      ================================================================ */}
 
       <div className="text-center mb-5">
 
@@ -141,185 +255,207 @@ function Categories() {
       </div>
 
 
-      {/* CATEGORY GRID */}
+      {/* ================================================================
+          EMPTY STATE
+      ================================================================ */}
 
-      <div className="row g-3">
+      {categories.length === 0 ? (
 
-        {categories.map(
-          (category) => {
+        <div className="text-center py-4">
 
-            const isActive =
-              activeCategory ===
-              category.id;
+          <p className="text-muted mb-0">
+            No categories available.
+          </p>
 
-            return (
+        </div>
 
-              <div
-                className="col-6 col-md-4 col-lg-2"
+      ) : (
 
-                key={
-                  category.id
-                }
+        /* ==============================================================
+           CATEGORY GRID
+        ============================================================== */
 
-                onMouseEnter={() =>
-                  setActiveCategory(
+        <div className="row g-3">
+
+          {categories.map(
+            (category) => {
+
+              const isActive =
+                activeCategory ===
+                category.id;
+
+              const subcategories =
+                Array.isArray(
+                  category.subcategories
+                )
+                  ? category.subcategories
+                  : [];
+
+              return (
+
+                <div
+                  className="col-6 col-md-4 col-lg-2"
+
+                  key={
                     category.id
-                  )
-                }
+                  }
 
-                onMouseLeave={() =>
-                  setActiveCategory(
-                    null
-                  )
-                }
-
-                style={{
-                  position:
-                    "relative",
-
-                  zIndex:
-                    isActive
-                      ? 50
-                      : 1,
-                }}
-              >
-
-                {/* =======================================================
-                    CATEGORY CARD
-                ======================================================= */}
-
-                <button
-                  type="button"
-
-                  onClick={() =>
-                    handleCategoryClick(
-                      category
+                  onMouseEnter={() =>
+                    setActiveCategory(
+                      category.id
                     )
                   }
 
-                  className="text-center h-100 w-100"
+                  onMouseLeave={() =>
+                    setActiveCategory(
+                      null
+                    )
+                  }
 
                   style={{
-                    cursor:
-                      "pointer",
+                    position:
+                      "relative",
 
-                    padding:
-                      "28px 12px",
-
-                    borderRadius:
-                      "16px",
-
-                    background:
+                    zIndex:
                       isActive
-                        ? "#f5f8ff"
-                        : "#ffffff",
-
-                    border:
-                      `1px solid ${
-                        isActive
-                          ? "#2563eb"
-                          : "#eef0f3"
-                      }`,
-
-                    transition:
-                      "all 0.25s ease",
-
-                    transform:
-                      isActive
-                        ? "translateY(-6px)"
-                        : "none",
-
-                    boxShadow:
-                      isActive
-                        ? "0 16px 28px rgba(37, 99, 235, 0.12)"
-                        : "0 2px 6px rgba(0,0,0,0.03)",
-
-                    appearance:
-                      "none",
-
-                    outline:
-                      "none",
+                        ? 50
+                        : 1,
                   }}
                 >
 
-                  {/* ICON */}
+                  {/* =====================================================
+                      CATEGORY CARD
+                  ===================================================== */}
 
-                  <div
+                  <button
+                    type="button"
+
+                    onClick={() =>
+                      handleCategoryClick(
+                        category
+                      )
+                    }
+
+                    className="text-center h-100 w-100"
+
                     style={{
-                      width:
-                        "64px",
+                      cursor:
+                        "pointer",
 
-                      height:
-                        "64px",
-
-                      margin:
-                        "0 auto 14px",
+                      padding:
+                        "28px 12px",
 
                       borderRadius:
-                        "50%",
-
-                      display:
-                        "flex",
-
-                      alignItems:
-                        "center",
-
-                      justifyContent:
-                        "center",
-
-                      fontSize:
-                        "28px",
+                        "16px",
 
                       background:
                         isActive
-                          ? "#2563eb"
-                          : "#f7f8fa",
+                          ? "#f5f8ff"
+                          : "#ffffff",
+
+                      border:
+                        `1px solid ${
+                          isActive
+                            ? "#2563eb"
+                            : "#eef0f3"
+                        }`,
 
                       transition:
                         "all 0.25s ease",
-                    }}
-                  >
 
-                    {category.icon}
-
-                  </div>
-
-
-                  {/* NAME */}
-
-                  <h6
-                    className="mb-0"
-
-                    style={{
-                      fontWeight:
-                        600,
-
-                      color:
+                      transform:
                         isActive
-                          ? "#2563eb"
-                          : "#1f2430",
+                          ? "translateY(-6px)"
+                          : "none",
 
-                      transition:
-                        "color 0.2s ease",
+                      boxShadow:
+                        isActive
+                          ? "0 16px 28px rgba(37, 99, 235, 0.12)"
+                          : "0 2px 6px rgba(0,0,0,0.03)",
+
+                      appearance:
+                        "none",
+
+                      outline:
+                        "none",
                     }}
                   >
 
-                    {category.name}
+                    {/* ICON */}
 
-                  </h6>
+                    <div
+                      style={{
+                        width:
+                          "64px",
 
-                </button>
+                        height:
+                          "64px",
+
+                        margin:
+                          "0 auto 14px",
+
+                        borderRadius:
+                          "50%",
+
+                        display:
+                          "flex",
+
+                        alignItems:
+                          "center",
+
+                        justifyContent:
+                          "center",
+
+                        fontSize:
+                          "28px",
+
+                        background:
+                          isActive
+                            ? "#2563eb"
+                            : "#f7f8fa",
+
+                        transition:
+                          "all 0.25s ease",
+                      }}
+                    >
+
+                      {category.icon || "🛍️"}
+
+                    </div>
 
 
-                {/* =======================================================
-                    SUBCATEGORY DROPDOWN
-                ======================================================= */}
+                    {/* CATEGORY NAME */}
 
-                {isActive &&
-                  category
-                    .subcategories
-                    ?.length >
-                    0 && (
+                    <h6
+                      className="mb-0"
+
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          isActive
+                            ? "#2563eb"
+                            : "#1f2430",
+
+                        transition:
+                          "color 0.2s ease",
+                      }}
+                    >
+
+                      {category.name}
+
+                    </h6>
+
+                  </button>
+
+
+                  {/* =====================================================
+                      SUBCATEGORY DROPDOWN
+                  ===================================================== */}
+
+                  {isActive &&
+                    subcategories.length > 0 && (
 
                     <div
                       style={{
@@ -364,12 +500,12 @@ function Categories() {
                       }}
                     >
 
-                      {category.subcategories.map(
-                        (sub) => (
+                      {subcategories.map(
+                        (subcategory) => (
 
                           <button
                             key={
-                              sub.id
+                              subcategory.id
                             }
 
                             type="button"
@@ -380,7 +516,7 @@ function Categories() {
                               handleSubcategoryClick(
                                 event,
                                 category,
-                                sub
+                                subcategory
                               )
                             }
 
@@ -420,37 +556,37 @@ function Categories() {
                             }}
 
                             onMouseEnter={(
-                              e
+                              event
                             ) => {
 
-                              e.currentTarget.style.background =
+                              event.currentTarget.style.background =
                                 "#f5f8ff";
 
-                              e.currentTarget.style.color =
+                              event.currentTarget.style.color =
                                 "#2563eb";
 
-                              e.currentTarget.style.paddingLeft =
+                              event.currentTarget.style.paddingLeft =
                                 "24px";
 
                             }}
 
                             onMouseLeave={(
-                              e
+                              event
                             ) => {
 
-                              e.currentTarget.style.background =
+                              event.currentTarget.style.background =
                                 "transparent";
 
-                              e.currentTarget.style.color =
+                              event.currentTarget.style.color =
                                 "#374151";
 
-                              e.currentTarget.style.paddingLeft =
+                              event.currentTarget.style.paddingLeft =
                                 "20px";
 
                             }}
                           >
 
-                            {sub.name}
+                            {subcategory.name}
 
                           </button>
 
@@ -458,18 +594,23 @@ function Categories() {
                       )}
 
                     </div>
+
                   )}
 
-              </div>
+                </div>
 
-            );
-          }
-        )}
+              );
+            }
+          )}
 
-      </div>
+        </div>
+
+      )}
 
 
-      {/* ANIMATION */}
+      {/* ================================================================
+          DROPDOWN ANIMATION
+      ================================================================ */}
 
       <style>
         {`
