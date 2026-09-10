@@ -1,7 +1,10 @@
 import "./Products.css";
 
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 
 import {
   FaSearch,
@@ -21,12 +24,32 @@ import Footer from "../components/layout/Footer";
 import { API_BASE_URL } from "../utils/api";
 
 function Products() {
-  const [searchParams] = useSearchParams();
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+
+  /*
+  ==========================================================
+  INITIAL URL PARAMETERS
+  ==========================================================
+  */
 
   const initialSearch =
     searchParams.get("search") || "";
 
+<<<<<<< Updated upstream
   const API_URL = API_BASE_URL;
+=======
+  const initialCategoryId =
+    searchParams.get("category_id") || "";
+
+  const initialSubcategoryId =
+    searchParams.get("subcategory_id") || "";
+
+  const API_URL =
+    "http://127.0.0.1:8000/api";
+>>>>>>> Stashed changes
 
   /*
   ==========================================================
@@ -40,8 +63,10 @@ function Products() {
   const [categories, setCategories] =
     useState([]);
 
-  const [subcategories, setSubcategories] =
-    useState([]);
+  const [
+    subcategories,
+    setSubcategories,
+  ] = useState([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -55,13 +80,19 @@ function Products() {
   const [search, setSearch] =
     useState(initialSearch);
 
-  const [categoryId, setCategoryId] =
-    useState("");
+  const [
+    categoryId,
+    setCategoryId,
+  ] = useState(
+    initialCategoryId
+  );
 
   const [
     subcategoryId,
     setSubcategoryId,
-  ] = useState("");
+  ] = useState(
+    initialSubcategoryId
+  );
 
   const [brand, setBrand] =
     useState("");
@@ -78,8 +109,10 @@ function Products() {
   const [maxPrice, setMaxPrice] =
     useState("");
 
-  const [minRating, setMinRating] =
-    useState("");
+  const [
+    minRating,
+    setMinRating,
+  ] = useState("");
 
   /*
   ==========================================================
@@ -135,7 +168,9 @@ function Products() {
       CATEGORY
       */
 
-      if (filters.categoryId) {
+      if (
+        filters.categoryId
+      ) {
         params.append(
           "category_id",
           filters.categoryId
@@ -146,7 +181,9 @@ function Products() {
       SUBCATEGORY
       */
 
-      if (filters.subcategoryId) {
+      if (
+        filters.subcategoryId
+      ) {
         params.append(
           "subcategory_id",
           filters.subcategoryId
@@ -187,7 +224,7 @@ function Products() {
       }
 
       /*
-      MINIMUM PRICE
+      MIN PRICE
       */
 
       if (filters.minPrice) {
@@ -198,7 +235,7 @@ function Products() {
       }
 
       /*
-      MAXIMUM PRICE
+      MAX PRICE
       */
 
       if (filters.maxPrice) {
@@ -209,19 +246,22 @@ function Products() {
       }
 
       /*
-      MINIMUM RATING
+      MIN RATING
       */
 
-      if (filters.minRating) {
+      if (
+        filters.minRating
+      ) {
         params.append(
           "min_rating",
           filters.minRating
         );
       }
 
-      const response = await fetch(
-        `${API_URL}/products?${params.toString()}`
-      );
+      const response =
+        await fetch(
+          `${API_URL}/products?${params.toString()}`
+        );
 
       if (!response.ok) {
         throw new Error(
@@ -232,10 +272,23 @@ function Products() {
       const data =
         await response.json();
 
-      setProducts(data);
+      /*
+      Support either:
+      [...]
+      or
+      { products: [...] }
+      */
+
+      const productList =
+        Array.isArray(data)
+          ? data
+          : data.products || [];
+
+      setProducts(
+        productList
+      );
 
     } catch (error) {
-
       console.error(
         "Product loading error:",
         error
@@ -244,9 +297,7 @@ function Products() {
       setProducts([]);
 
     } finally {
-
       setLoading(false);
-
     }
   };
 
@@ -273,15 +324,17 @@ function Products() {
         const data =
           await response.json();
 
-        setCategories(data);
+        setCategories(
+          Array.isArray(data)
+            ? data
+            : data.categories || []
+        );
 
       } catch (error) {
-
         console.error(
           "Category loading error:",
           error
         );
-
       }
     };
 
@@ -308,15 +361,17 @@ function Products() {
         const data =
           await response.json();
 
-        setSubcategories(data);
+        setSubcategories(
+          Array.isArray(data)
+            ? data
+            : data.subcategories || []
+        );
 
       } catch (error) {
-
         console.error(
           "Subcategory loading error:",
           error
         );
-
       }
     };
 
@@ -327,24 +382,85 @@ function Products() {
   */
 
   useEffect(() => {
-
     fetchCategories();
 
     fetchSubcategories();
+  }, []);
+
+  /*
+  ==========================================================
+  READ URL PARAMETERS
+  ==========================================================
+  |
+  | Example:
+  |
+  | /products?category_id=2&subcategory_id=8
+  |
+  ==========================================================
+  */
+
+  useEffect(() => {
+    const urlSearch =
+      searchParams.get(
+        "search"
+      ) || "";
+
+    const urlCategoryId =
+      searchParams.get(
+        "category_id"
+      ) || "";
+
+    const urlSubcategoryId =
+      searchParams.get(
+        "subcategory_id"
+      ) || "";
+
+    setSearch(
+      urlSearch
+    );
+
+    setCategoryId(
+      urlCategoryId
+    );
+
+    setSubcategoryId(
+      urlSubcategoryId
+    );
+
+    /*
+    Automatically load filtered products
+    */
 
     fetchProducts({
-      search: initialSearch,
-      categoryId: "",
-      subcategoryId: "",
-      brand: "",
-      color: "",
-      size: "",
-      minPrice: "",
-      maxPrice: "",
-      minRating: "",
+      search:
+        urlSearch,
+
+      categoryId:
+        urlCategoryId,
+
+      subcategoryId:
+        urlSubcategoryId,
+
+      brand:
+        "",
+
+      color:
+        "",
+
+      size:
+        "",
+
+      minPrice:
+        "",
+
+      maxPrice:
+        "",
+
+      minRating:
+        "",
     });
 
-  }, []);
+  }, [searchParams]);
 
   /*
   ==========================================================
@@ -355,10 +471,15 @@ function Products() {
   const filteredSubcategories =
     categoryId
       ? subcategories.filter(
-          (subcategory) =>
+          (
+            subcategory
+          ) =>
             String(
               subcategory.category_id
-            ) === String(categoryId)
+            ) ===
+            String(
+              categoryId
+            )
         )
       : [];
 
@@ -379,11 +500,25 @@ function Products() {
     );
 
     /*
-    Reset old subcategory when
-    category changes.
+    Reset subcategory
+    when category changes.
     */
 
     setSubcategoryId("");
+  };
+
+  /*
+  ==========================================================
+  SUBCATEGORY CHANGE
+  ==========================================================
+  */
+
+  const handleSubcategoryChange = (
+    event
+  ) => {
+    setSubcategoryId(
+      event.target.value
+    );
   };
 
   /*
@@ -397,7 +532,54 @@ function Products() {
   ) => {
     event.preventDefault();
 
-    fetchProducts();
+    /*
+    Update URL
+    */
+
+    const params =
+      new URLSearchParams();
+
+    if (search) {
+      params.set(
+        "search",
+        search
+      );
+    }
+
+    if (categoryId) {
+      params.set(
+        "category_id",
+        categoryId
+      );
+    }
+
+    if (subcategoryId) {
+      params.set(
+        "subcategory_id",
+        subcategoryId
+      );
+    }
+
+    setSearchParams(
+      params
+    );
+
+    /*
+    Fetch all filters,
+    including advanced filters.
+    */
+
+    fetchProducts({
+      search,
+      categoryId,
+      subcategoryId,
+      brand,
+      color,
+      size,
+      minPrice,
+      maxPrice,
+      minRating,
+    });
   };
 
   /*
@@ -407,7 +589,6 @@ function Products() {
   */
 
   const clearFilters = () => {
-
     setSearch("");
 
     setCategoryId("");
@@ -425,6 +606,12 @@ function Products() {
     setMaxPrice("");
 
     setMinRating("");
+
+    /*
+    Clear URL params
+    */
+
+    setSearchParams({});
 
     fetchProducts({
       search: "",
@@ -453,7 +640,9 @@ function Products() {
         ...previous,
 
         [productId]:
-          !previous[productId],
+          !previous[
+            productId
+          ],
       })
     );
   };
@@ -467,26 +656,79 @@ function Products() {
   const getImageSrc = (
     image
   ) => {
-
     if (!image) {
       return "/images/products/placeholder.svg";
     }
 
+    const cleanImage =
+      String(image).trim();
+
+    /*
+    Full URL
+    */
+
     if (
-      image.startsWith(
+      cleanImage.startsWith(
         "http://"
       ) ||
-      image.startsWith(
+      cleanImage.startsWith(
         "https://"
       )
     ) {
-      return image;
+      return cleanImage;
     }
 
-    return `/${image.replace(
-      /^\/+/,
-      ""
-    )}`;
+    /*
+    Laravel storage
+    */
+
+    if (
+      cleanImage.startsWith(
+        "storage/"
+      )
+    ) {
+      return `http://127.0.0.1:8000/${cleanImage}`;
+    }
+
+    if (
+      cleanImage.startsWith(
+        "/storage/"
+      )
+    ) {
+      return `http://127.0.0.1:8000${cleanImage}`;
+    }
+
+    /*
+    Already:
+    images/products/file.jpg
+    */
+
+    if (
+      cleanImage.startsWith(
+        "images/products/"
+      )
+    ) {
+      return `/${cleanImage}`;
+    }
+
+    /*
+    Already:
+    /images/products/file.jpg
+    */
+
+    if (
+      cleanImage.startsWith(
+        "/images/products/"
+      )
+    ) {
+      return cleanImage;
+    }
+
+    /*
+    Only filename
+    */
+
+    return `/images/products/${cleanImage}`;
   };
 
   /*
@@ -498,8 +740,12 @@ function Products() {
   const selectedCategory =
     categories.find(
       (category) =>
-        String(category.id) ===
-        String(categoryId)
+        String(
+          category.id
+        ) ===
+        String(
+          categoryId
+        )
     );
 
   /*
@@ -572,24 +818,21 @@ function Products() {
 
         </section>
 
-
         {/* ================================================= */}
-        {/* PRODUCT SECTION */}
+        {/* PRODUCTS AREA */}
         {/* ================================================= */}
 
         <section className="container products-content">
 
           <div className="row g-4">
 
-
             {/* ================================================= */}
-            {/* LEFT FILTER */}
+            {/* FILTER SIDE */}
             {/* ================================================= */}
 
             <div className="col-12 col-lg-3">
 
               <div className="filter-card">
-
 
                 {/* FILTER HEADER */}
 
@@ -609,13 +852,11 @@ function Products() {
 
                 </div>
 
-
                 <form
                   onSubmit={
                     handleFilter
                   }
                 >
-
 
                   {/* ======================================= */}
                   {/* SEARCH */}
@@ -634,12 +875,15 @@ function Products() {
                       <input
                         type="text"
                         placeholder="Product name..."
-                        value={search}
+                        value={
+                          search
+                        }
                         onChange={(
                           event
                         ) =>
                           setSearch(
-                            event.target
+                            event
+                              .target
                               .value
                           )
                         }
@@ -648,7 +892,6 @@ function Products() {
                     </div>
 
                   </div>
-
 
                   {/* ======================================= */}
                   {/* CATEGORY */}
@@ -688,11 +931,9 @@ function Products() {
                               category.id
                             }
                           >
-
                             {
                               category.name
                             }
-
                           </option>
 
                         )
@@ -701,7 +942,6 @@ function Products() {
                     </select>
 
                   </div>
-
 
                   {/* ======================================= */}
                   {/* SUBCATEGORY */}
@@ -717,28 +957,18 @@ function Products() {
 
                     </label>
 
-
-                    {/* No Category Selected */}
-
                     {!categoryId && (
 
                       <select
                         disabled
                         value=""
                       >
-
                         <option value="">
-
                           Select a category first
-
                         </option>
-
                       </select>
 
                     )}
-
-
-                    {/* Category Selected */}
 
                     {categoryId && (
 
@@ -746,22 +976,14 @@ function Products() {
                         value={
                           subcategoryId
                         }
-                        onChange={(
-                          event
-                        ) =>
-                          setSubcategoryId(
-                            event.target
-                              .value
-                          )
+                        onChange={
+                          handleSubcategoryChange
                         }
                       >
 
                         <option value="">
-
                           All Subcategories
-
                         </option>
-
 
                         {filteredSubcategories.map(
                           (
@@ -776,11 +998,9 @@ function Products() {
                                 subcategory.id
                               }
                             >
-
                               {
                                 subcategory.name
                               }
-
                             </option>
 
                           )
@@ -791,7 +1011,6 @@ function Products() {
                     )}
 
                   </div>
-
 
                   {/* ======================================= */}
                   {/* BRAND */}
@@ -810,19 +1029,21 @@ function Products() {
                     <input
                       type="text"
                       placeholder="Example: Apple"
-                      value={brand}
+                      value={
+                        brand
+                      }
                       onChange={(
                         event
                       ) =>
                         setBrand(
-                          event.target
+                          event
+                            .target
                             .value
                         )
                       }
                     />
 
                   </div>
-
 
                   {/* ======================================= */}
                   {/* COLOR */}
@@ -841,19 +1062,21 @@ function Products() {
                     <input
                       type="text"
                       placeholder="Example: Black"
-                      value={color}
+                      value={
+                        color
+                      }
                       onChange={(
                         event
                       ) =>
                         setColor(
-                          event.target
+                          event
+                            .target
                             .value
                         )
                       }
                     />
 
                   </div>
-
 
                   {/* ======================================= */}
                   {/* SIZE */}
@@ -868,12 +1091,15 @@ function Products() {
                     <input
                       type="text"
                       placeholder="Example: M"
-                      value={size}
+                      value={
+                        size
+                      }
                       onChange={(
                         event
                       ) =>
                         setSize(
-                          event.target
+                          event
+                            .target
                             .value
                         )
                       }
@@ -881,9 +1107,8 @@ function Products() {
 
                   </div>
 
-
                   {/* ======================================= */}
-                  {/* PRICE RANGE */}
+                  {/* PRICE */}
                   {/* ======================================= */}
 
                   <div className="filter-group">
@@ -906,7 +1131,8 @@ function Products() {
                           event
                         ) =>
                           setMinPrice(
-                            event.target
+                            event
+                              .target
                               .value
                           )
                         }
@@ -928,7 +1154,8 @@ function Products() {
                           event
                         ) =>
                           setMaxPrice(
-                            event.target
+                            event
+                              .target
                               .value
                           )
                         }
@@ -938,7 +1165,6 @@ function Products() {
 
                   </div>
 
-
                   {/* ======================================= */}
                   {/* RATING */}
                   {/* ======================================= */}
@@ -946,9 +1172,7 @@ function Products() {
                   <div className="filter-group">
 
                     <label>
-
                       Minimum Rating
-
                     </label>
 
                     <select
@@ -959,7 +1183,8 @@ function Products() {
                         event
                       ) =>
                         setMinRating(
-                          event.target
+                          event
+                            .target
                             .value
                         )
                       }
@@ -989,9 +1214,8 @@ function Products() {
 
                   </div>
 
-
                   {/* ======================================= */}
-                  {/* FILTER BUTTONS */}
+                  {/* ACTION BUTTONS */}
                   {/* ======================================= */}
 
                   <div className="filter-actions">
@@ -1006,7 +1230,6 @@ function Products() {
                       Apply Filters
 
                     </button>
-
 
                     <button
                       type="button"
@@ -1030,17 +1253,13 @@ function Products() {
 
             </div>
 
-
             {/* ================================================= */}
-            {/* RIGHT PRODUCT AREA */}
+            {/* PRODUCTS */}
             {/* ================================================= */}
 
             <div className="col-12 col-lg-9">
 
-
-              {/* ======================================= */}
-              {/* PRODUCT TOP BAR */}
-              {/* ======================================= */}
+              {/* TOP BAR */}
 
               <div className="products-top-bar">
 
@@ -1073,10 +1292,7 @@ function Products() {
 
               </div>
 
-
-              {/* ======================================= */}
               {/* LOADING */}
-              {/* ======================================= */}
 
               {loading && (
 
@@ -1095,10 +1311,7 @@ function Products() {
 
               )}
 
-
-              {/* ======================================= */}
               {/* NO PRODUCTS */}
-              {/* ======================================= */}
 
               {!loading &&
                 products.length ===
@@ -1113,11 +1326,9 @@ function Products() {
                     </h4>
 
                     <p>
-
                       We could not find
                       products matching your
                       selected filters.
-
                     </p>
 
                     <button
@@ -1126,22 +1337,18 @@ function Products() {
                         clearFilters
                       }
                     >
-
                       Clear Filters
-
                     </button>
 
                   </div>
 
                 )}
 
-
-              {/* ======================================= */}
               {/* PRODUCTS GRID */}
-              {/* ======================================= */}
 
               {!loading &&
-                products.length > 0 && (
+                products.length >
+                  0 && (
 
                   <div className="row g-4">
 
@@ -1157,34 +1364,31 @@ function Products() {
 
                           <div className="product-card">
 
-
-                            {/* ======================= */}
                             {/* IMAGE */}
-                            {/* ======================= */}
 
                             <div className="product-image-area">
 
                               <img
-                                src={getImageSrc(
-                                  product.image
-                                )}
+                                src={
+                                  getImageSrc(
+                                    product.image
+                                  )
+                                }
                                 alt={
                                   product.name
                                 }
                                 onError={(
                                   event
                                 ) => {
+                                  event.currentTarget.onerror =
+                                    null;
 
                                   event.currentTarget.src =
                                     "/images/products/placeholder.svg";
-
                                 }}
                               />
 
-
-                              {/* ======================= */}
                               {/* WISHLIST */}
-                              {/* ======================= */}
 
                               <button
                                 type="button"
@@ -1202,15 +1406,10 @@ function Products() {
                                   )
                                 }
                               >
-
                                 <FaHeart />
-
                               </button>
 
-
-                              {/* ======================= */}
-                              {/* CATEGORY BADGE */}
-                              {/* ======================= */}
+                              {/* CATEGORY */}
 
                               {product.category && (
 
@@ -1228,13 +1427,9 @@ function Products() {
 
                             </div>
 
-
-                            {/* ======================= */}
                             {/* PRODUCT BODY */}
-                            {/* ======================= */}
 
                             <div className="product-card-body">
-
 
                               {/* BRAND */}
 
@@ -1245,17 +1440,13 @@ function Products() {
 
                               </div>
 
-
                               {/* NAME */}
 
                               <h5>
-
                                 {
                                   product.name
                                 }
-
                               </h5>
-
 
                               {/* RATING */}
 
@@ -1276,7 +1467,6 @@ function Products() {
 
                               </div>
 
-
                               {/* DESCRIPTION */}
 
                               <p className="product-description">
@@ -1286,10 +1476,7 @@ function Products() {
 
                               </p>
 
-
-                              {/* ======================= */}
-                              {/* SUBCATEGORY LABEL */}
-                              {/* ======================= */}
+                              {/* SUBCATEGORY */}
 
                               {product.subcategory && (
 
@@ -1309,22 +1496,17 @@ function Products() {
 
                               )}
 
-
-                              {/* ======================= */}
                               {/* COLOR / SIZE */}
-                              {/* ======================= */}
 
                               <div className="product-details-row">
 
                                 {product.color && (
 
                                   <span>
-
                                     Color:{" "}
                                     {
                                       product.color
                                     }
-
                                   </span>
 
                                 )}
@@ -1332,43 +1514,37 @@ function Products() {
                                 {product.size && (
 
                                   <span>
-
                                     Size:{" "}
                                     {
                                       product.size
                                     }
-
                                   </span>
 
                                 )}
 
                               </div>
 
-
-                              {/* ======================= */}
                               {/* STOCK */}
-                              {/* ======================= */}
 
                               <div
                                 className={`stock-status ${
-                                  product.stock >
-                                  0
+                                  Number(
+                                    product.stock
+                                  ) > 0
                                     ? "in-stock"
                                     : "out-stock"
                                 }`}
                               >
 
-                                {product.stock >
-                                0
+                                {Number(
+                                  product.stock
+                                ) > 0
                                   ? `${product.stock} in stock`
                                   : "Out of stock"}
 
                               </div>
 
-
-                              {/* ======================= */}
                               {/* PRICE / DETAILS */}
-                              {/* ======================= */}
 
                               <div className="product-card-bottom">
 
@@ -1379,21 +1555,19 @@ function Products() {
                                   </span>
 
                                   {Number(
-                                    product.price
+                                    product.price ||
+                                      0
                                   ).toFixed(
                                     2
                                   )}
 
                                 </div>
 
-
                                 <Link
                                   to={`/products/${product.id}`}
                                   className="view-product-btn"
                                 >
-
                                   View Details
-
                                 </Link>
 
                               </div>
@@ -1420,7 +1594,6 @@ function Products() {
       </main>
 
       <Footer />
-
     </>
   );
 }

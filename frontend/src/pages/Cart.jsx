@@ -1,261 +1,1241 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import {
-  FaCreditCard,
-  FaRegSadTear,
   FaShoppingCart,
-  FaTruck,
+  FaTrash,
+  FaMinus,
+  FaPlus,
+  FaArrowLeft,
+  FaBoxOpen,
 } from "react-icons/fa";
-
-import CartItem from "../components/cart/CartItem";
-import LoadingSpinner from "../components/common/LoadingSpinner";
-import Footer from "../components/layout/Footer";
-import Navbar from "../components/layout/Navbar";
-
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
 
 import {
   getCart,
-  removeFromCart,
   updateCartItem,
-} from "../services/customerService";
+  removeCartItem,
+  clearCart,
+} from "../services/cartService";
+
+import "./Cart.css";
 
 function Cart() {
-  const { token } = useAuth();
-  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  const [cart, setCart] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [processingId, setProcessingId] = useState(null);
+  /*
+  |--------------------------------------------------------------------------
+  | STATES
+  |--------------------------------------------------------------------------
+  */
+
+  const [cartItems, setCartItems] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  const [message, setMessage] = useState("");
+
+  const [updatingId, setUpdatingId] = useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD CART
+  |--------------------------------------------------------------------------
+  */
+
+  const loadCart = async () => {
+    try {
+      setLoading(true);
+
+      setError("");
+
+      const data = await getCart();
+
+      /*
+       * Backend response:
+       *
+       * {
+       *   success: true,
+       *   items: [...]
+       * }
+       */
+
+      const items =
+        data?.items ||
+        data?.cart ||
+        data?.cart_items ||
+        (Array.isArray(data) ? data : []);
+
+      setCartItems(items);
+
+    } catch (err) {
+
+      console.error(
+        "Cart loading error:",
+        err
+      );
+
+      if (err.response?.status === 401) {
+
+        setError(
+          "Please login to view your cart."
+        );
+
+      } else {
+
+        setError(
+          err.response?.data?.message ||
+            "Unable to load your cart."
+        );
+      }
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD CART ON PAGE OPEN
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
-    const loadCart = async () => {
-      setIsLoading(true);
+    loadCart();
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | GET PRODUCT FROM CART ITEM
+  |--------------------------------------------------------------------------
+  */
+
+  const getProduct = (item) => {
+    return item?.product || {};
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | PRODUCT IMAGE URL
+  |--------------------------------------------------------------------------
+  */
+
+  const getImageUrl = (product) => {
+
+    if (!product?.image) {
+      return "/images/products/placeholder.svg";
+    }
+
+    const image =
+      String(product.image).trim();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Full URL
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      image.startsWith("http://") ||
+      image.startsWith("https://")
+    ) {
+      return image;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel storage image
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      image.startsWith("storage/")
+    ) {
+      return `http://127.0.0.1:8000/${image}`;
+    }
+
+    if (
+      image.startsWith("/storage/")
+    ) {
+      return `http://127.0.0.1:8000${image}`;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Already contains frontend path
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      image.startsWith(
+        "images/products/"
+      )
+    ) {
+      return `/${image}`;
+    }
+
+    if (
+      image.startsWith(
+        "/images/products/"
+      )
+    ) {
+      return image;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Only filename
+    |--------------------------------------------------------------------------
+    |
+    | Example:
+    |
+    | samsungS23.jpg
+    |
+    */
+
+    return `/images/products/${image}`;
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | NOTIFY NAVBAR
+  |--------------------------------------------------------------------------
+  |
+  | Navbar listens for this event.
+  |
+  */
+
+  const notifyCartUpdated = () => {
+
+    window.dispatchEvent(
+      new Event("cartUpdated")
+    );
+
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | UPDATE QUANTITY
+  |--------------------------------------------------------------------------
+  */
+
+  const handleQuantityChange =
+    async (
+      item,
+      newQuantity
+    ) => {
+
+      /*
+       * Minimum quantity = 1
+       */
+
+      if (newQuantity < 1) {
+        return;
+      }
+
+      const product =
+        getProduct(item);
+
+      /*
+      |--------------------------------------------------------------------------
+      | Stock Validation
+      |--------------------------------------------------------------------------
+      */
+
+      if (
+        product.stock !==
+          undefined &&
+        newQuantity >
+          Number(
+            product.stock
+          )
+      ) {
+
+        setError(
+          `Only ${product.stock} item(s) available in stock.`
+        );
+
+        return;
+      }
 
       try {
-        const response = await getCart(token);
-        setCart(response.items || []);
-      } catch (error) {
-        showToast(
-          error.response?.data?.message || "Failed to load cart.",
-          "danger"
+
+        setUpdatingId(
+          item.id
         );
+
+        setError("");
+
+        setMessage("");
+
+        /*
+        |--------------------------------------------------------------------------
+        | PATCH /api/cart/{id}
+        |--------------------------------------------------------------------------
+        */
+
+        await updateCartItem(
+          item.id,
+          newQuantity
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Local Cart State
+        |--------------------------------------------------------------------------
+        */
+
+        setCartItems(
+          (previousItems) =>
+            previousItems.map(
+              (cartItem) =>
+                cartItem.id ===
+                item.id
+                  ? {
+                      ...cartItem,
+                      quantity:
+                        newQuantity,
+                    }
+                  : cartItem
+            )
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Cart Badge
+        |--------------------------------------------------------------------------
+        */
+
+        notifyCartUpdated();
+
+      } catch (err) {
+
+        console.error(
+          "Quantity update error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to update quantity."
+        );
+
       } finally {
-        setIsLoading(false);
+
+        setUpdatingId(null);
+
       }
     };
 
-    if (token) {
-      loadCart();
-    }
-  }, [token, showToast]);
+  /*
+  |--------------------------------------------------------------------------
+  | REMOVE ONE PRODUCT
+  |--------------------------------------------------------------------------
+  */
 
-  const subtotal = useMemo(
-    () =>
-      cart.reduce(
-        (sum, item) =>
-          sum + Number(item.product?.price || 0) * item.quantity,
-        0
-      ),
-    [cart]
-  );
+  const handleRemove =
+    async (itemId) => {
 
-  const handleQuantityChange = async (item, quantity) => {
-    if (quantity < 1) return;
+      const confirmed =
+        window.confirm(
+          "Remove this product from your cart?"
+        );
 
-    setProcessingId(item.id);
+      if (!confirmed) {
+        return;
+      }
 
-    try {
-      const response = await updateCartItem(
-        token,
-        item.id,
-        quantity
-      );
+      try {
 
-      setCart((currentItems) =>
-        currentItems.map((cartItem) =>
-          cartItem.id === item.id
-            ? response.item
-            : cartItem
-        )
-      );
-    } catch (error) {
-      showToast(
-        error.response?.data?.message ||
-          "Failed to update cart item.",
-        "danger"
-      );
-    } finally {
-      setProcessingId(null);
-    }
-  };
+        setUpdatingId(
+          itemId
+        );
 
-  const handleRemove = async (cartItemId) => {
-    setProcessingId(cartItemId);
+        setError("");
 
-    try {
-      await removeFromCart(token, cartItemId);
+        setMessage("");
 
-      setCart((currentItems) =>
-        currentItems.filter(
-          (item) => item.id !== cartItemId
-        )
-      );
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE /api/cart/{id}
+        |--------------------------------------------------------------------------
+        */
 
-      showToast("Cart item removed.", "info");
-    } catch (error) {
-      showToast(
-        error.response?.data?.message ||
-          "Failed to remove cart item.",
-        "danger"
-      );
-    } finally {
-      setProcessingId(null);
-    }
-  };
+        await removeCartItem(
+          itemId
+        );
 
-  return (
-    <div className="app-page">
-      <Navbar />
+        /*
+        |--------------------------------------------------------------------------
+        | Remove From Local State
+        |--------------------------------------------------------------------------
+        */
 
-      <main className="container py-5">
-        <div className="page-header mb-4">
-          <div>
-            <span className="section-kicker">
-              Review your order
-            </span>
+        setCartItems(
+          (previousItems) =>
+            previousItems.filter(
+              (item) =>
+                item.id !==
+                itemId
+            )
+        );
 
-            <h2 className="mb-0 mt-2">
-              <FaShoppingCart className="me-2 text-primary" />
-              Shopping Cart
-            </h2>
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Badge
+        |--------------------------------------------------------------------------
+        */
+
+        notifyCartUpdated();
+
+        setMessage(
+          "Product removed from cart."
+        );
+
+      } catch (err) {
+
+        console.error(
+          "Remove cart item error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to remove product."
+        );
+
+      } finally {
+
+        setUpdatingId(null);
+
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | CLEAR COMPLETE CART
+  |--------------------------------------------------------------------------
+  */
+
+  const handleClearCart =
+    async () => {
+
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to clear your cart?"
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+
+        setLoading(true);
+
+        setError("");
+
+        setMessage("");
+
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE /api/cart
+        |--------------------------------------------------------------------------
+        */
+
+        await clearCart();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Local State
+        |--------------------------------------------------------------------------
+        */
+
+        setCartItems([]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Badge
+        |--------------------------------------------------------------------------
+        */
+
+        notifyCartUpdated();
+
+        setMessage(
+          "Cart cleared successfully."
+        );
+
+      } catch (err) {
+
+        console.error(
+          "Clear cart error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to clear cart."
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | TOTAL ITEM QUANTITY
+  |--------------------------------------------------------------------------
+  |
+  | Example:
+  |
+  | Product A quantity = 2
+  | Product B quantity = 3
+  |
+  | totalItemCount = 5
+  |
+  */
+
+  const totalItemCount =
+    cartItems.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.quantity || 0
+        ),
+      0
+    );
+
+  /*
+  |--------------------------------------------------------------------------
+  | SUBTOTAL
+  |--------------------------------------------------------------------------
+  */
+
+  const subtotal =
+    cartItems.reduce(
+      (
+        total,
+        item
+      ) => {
+
+        const product =
+          getProduct(item);
+
+        const price =
+          Number(
+            product.price ||
+              0
+          );
+
+        const quantity =
+          Number(
+            item.quantity ||
+              1
+          );
+
+        return (
+          total +
+          price * quantity
+        );
+
+      },
+      0
+    );
+
+  /*
+  |--------------------------------------------------------------------------
+  | SHIPPING
+  |--------------------------------------------------------------------------
+  |
+  | subtotal >= 100
+  |     FREE
+  |
+  | subtotal < 100
+  |     $10
+  |
+  */
+
+  const shipping =
+    subtotal > 0
+      ? subtotal >= 100
+        ? 0
+        : 10
+      : 0;
+
+  /*
+  |--------------------------------------------------------------------------
+  | FINAL TOTAL
+  |--------------------------------------------------------------------------
+  */
+
+  const total =
+    subtotal +
+    shipping;
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOADING SCREEN
+  |--------------------------------------------------------------------------
+  */
+
+  if (loading) {
+
+    return (
+
+      <main className="cart-page">
+
+        <div className="cart-container">
+
+          <div className="cart-loading">
+
+            <div className="cart-loader"></div>
+
+            <p>
+              Loading your cart...
+            </p>
+
           </div>
 
-          <span className="badge badge-soft-primary">
-            {cart.length} items
-          </span>
         </div>
 
-        {isLoading ? (
-          <div className="card glass-card empty-state">
-            <LoadingSpinner text="Loading cart..." />
-          </div>
-        ) : cart.length === 0 ? (
-          <div className="card glass-card empty-state">
-            <div className="empty-illustration mb-4">
-              <FaRegSadTear size={42} />
-            </div>
-
-            <h4>Your cart is empty.</h4>
-
-            <p className="text-muted">
-              Add products to your cart and continue
-              checkout when ready.
-            </p>
-          </div>
-        ) : (
-          <div className="row g-4">
-            <div className="col-lg-8">
-              <div className="card glass-card">
-                <div className="card-body p-0">
-                  <div className="table-responsive">
-                    <table className="table cart-table align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th className="ps-4">Image</th>
-                          <th>Product</th>
-                          <th>Price</th>
-                          <th>Qty</th>
-                          <th>Subtotal</th>
-                          <th className="pe-4"></th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {cart.map((item) => (
-                          <CartItem
-                            key={item.id}
-                            item={item}
-                            isProcessing={
-                              processingId === item.id
-                            }
-                            onDecrease={(cartItem) =>
-                              handleQuantityChange(
-                                cartItem,
-                                cartItem.quantity - 1
-                              )
-                            }
-                            onIncrease={(cartItem) =>
-                              handleQuantityChange(
-                                cartItem,
-                                cartItem.quantity + 1
-                              )
-                            }
-                            onRemove={handleRemove}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-lg-4">
-              <div className="card glass-card order-summary">
-                <div className="card-body p-4">
-                  <h4 className="mb-4">
-                    Order Summary
-                  </h4>
-
-                  <div className="d-flex justify-content-between mb-3">
-                    <span className="text-muted">
-                      Subtotal
-                    </span>
-
-                    <strong>
-                      Rs. {subtotal.toLocaleString()}
-                    </strong>
-                  </div>
-
-                  <div className="d-flex justify-content-between mb-3">
-                    <span className="text-muted">
-                      <FaTruck className="me-2 text-success" />
-                      Delivery
-                    </span>
-
-                    <strong>
-                      Calculated at checkout
-                    </strong>
-                  </div>
-
-                  <hr />
-
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h5 className="mb-0">Total</h5>
-
-                    <h4 className="text-primary mb-0">
-                      Rs. {subtotal.toLocaleString()}
-                    </h4>
-                  </div>
-
-                  <Link
-                    to="/checkout"
-                    className="btn btn-success w-100"
-                  >
-                    <FaCreditCard className="me-2" />
-                    Proceed to Checkout
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
-      <Footer />
-    </div>
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PAGE
+  |--------------------------------------------------------------------------
+  */
+
+  return (
+
+    <main className="cart-page">
+
+      <div className="cart-container">
+
+        {/* ================================================================
+            CART HEADER
+        ================================================================ */}
+
+        <div className="cart-heading">
+
+          <div>
+
+            <span className="cart-eyebrow">
+              REVIEW YOUR ORDER
+            </span>
+
+            <h1>
+
+              <FaShoppingCart />
+
+              Shopping Cart
+
+            </h1>
+
+          </div>
+
+          {/* TOTAL QUANTITY */}
+
+          <span className="cart-count">
+
+            {totalItemCount}{" "}
+
+            {totalItemCount === 1
+              ? "item"
+              : "items"}
+
+          </span>
+
+        </div>
+
+        {/* ================================================================
+            ERROR
+        ================================================================ */}
+
+        {error && (
+
+          <div className="cart-alert cart-error">
+
+            {error}
+
+          </div>
+
+        )}
+
+        {/* ================================================================
+            SUCCESS
+        ================================================================ */}
+
+        {message && (
+
+          <div className="cart-alert cart-success">
+
+            {message}
+
+          </div>
+
+        )}
+
+        {/* ================================================================
+            EMPTY CART
+        ================================================================ */}
+
+        {cartItems.length === 0 ? (
+
+          <div className="empty-cart">
+
+            <div className="empty-cart-icon">
+
+              <FaBoxOpen />
+
+            </div>
+
+            <h2>
+              Your cart is empty.
+            </h2>
+
+            <p>
+              Add products to your cart
+              and continue checkout when
+              ready.
+            </p>
+
+            <Link
+              to="/products"
+              className="continue-shopping-btn"
+            >
+
+              <FaArrowLeft />
+
+              Browse Products
+
+            </Link>
+
+          </div>
+
+        ) : (
+
+          /* ==============================================================
+             CART HAS ITEMS
+          ============================================================== */
+
+          <div className="cart-layout">
+
+            {/* ============================================================
+                LEFT SIDE
+            ============================================================ */}
+
+            <section className="cart-items-section">
+
+              <div className="cart-items-header">
+
+                <h2>
+                  Your Products
+                </h2>
+
+                <button
+                  type="button"
+                  className="clear-cart-btn"
+                  onClick={
+                    handleClearCart
+                  }
+                >
+
+                  <FaTrash />
+
+                  Clear Cart
+
+                </button>
+
+              </div>
+
+              {/* ==========================================================
+                  CART PRODUCTS
+              ========================================================== */}
+
+              <div className="cart-items-list">
+
+                {cartItems.map(
+                  (item) => {
+
+                    const product =
+                      getProduct(
+                        item
+                      );
+
+                    return (
+
+                      <article
+                        className="cart-item-card"
+                        key={
+                          item.id
+                        }
+                      >
+
+                        {/* ==================================================
+                            IMAGE
+                        ================================================== */}
+
+                        <Link
+                          to={`/products/${product.id}`}
+                          className="cart-product-image"
+                        >
+
+                          <img
+                            src={
+                              getImageUrl(
+                                product
+                              )
+                            }
+
+                            alt={
+                              product.name ||
+                              "Product"
+                            }
+
+                            onError={(
+                              e
+                            ) => {
+
+                              /*
+                               * Prevent infinite
+                               * image fallback loop
+                               */
+
+                              e.currentTarget.onerror =
+                                null;
+
+                              e.currentTarget.src =
+                                "/images/products/placeholder.svg";
+
+                            }}
+                          />
+
+                        </Link>
+
+                        {/* ==================================================
+                            PRODUCT INFO
+                        ================================================== */}
+
+                        <div className="cart-product-info">
+
+                          {/* BRAND */}
+
+                          <span className="cart-product-brand">
+
+                            {product.brand ||
+                              "ShopEase"}
+
+                          </span>
+
+                          {/* PRODUCT NAME */}
+
+                          <Link
+                            to={`/products/${product.id}`}
+                            className="cart-product-name"
+                          >
+
+                            {product.name ||
+                              "Product"}
+
+                          </Link>
+
+                          {/* PRODUCT META */}
+
+                          <div className="cart-product-meta">
+
+                            {product.color && (
+
+                              <span>
+
+                                Color:{" "}
+
+                                {
+                                  product.color
+                                }
+
+                              </span>
+
+                            )}
+
+                            {product.size && (
+
+                              <span>
+
+                                Size:{" "}
+
+                                {
+                                  product.size
+                                }
+
+                              </span>
+
+                            )}
+
+                          </div>
+
+                          {/* STOCK */}
+
+                          <span className="cart-stock">
+
+                            {product.stock ??
+                              0}{" "}
+
+                            available
+
+                          </span>
+
+                          {/* MOBILE PRICE */}
+
+                          <div className="cart-mobile-price">
+
+                            $
+
+                            {Number(
+                              product.price ||
+                                0
+                            ).toFixed(
+                              2
+                            )}
+
+                          </div>
+
+                        </div>
+
+                        {/* ==================================================
+                            CART ITEM ACTIONS
+                        ================================================== */}
+
+                        <div className="cart-item-actions">
+
+                          {/* PRICE */}
+
+                          <div className="cart-price">
+
+                            $
+
+                            {Number(
+                              product.price ||
+                                0
+                            ).toFixed(
+                              2
+                            )}
+
+                          </div>
+
+                          {/* =================================================
+                              QUANTITY CONTROLLER
+                          ================================================= */}
+
+                          <div className="quantity-control">
+
+                            {/* MINUS */}
+
+                            <button
+                              type="button"
+
+                              aria-label="Decrease quantity"
+
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item,
+                                  Number(
+                                    item.quantity
+                                  ) - 1
+                                )
+                              }
+
+                              disabled={
+                                Number(
+                                  item.quantity
+                                ) <= 1 ||
+                                updatingId ===
+                                  item.id
+                              }
+                            >
+
+                              <FaMinus />
+
+                            </button>
+
+                            {/* CURRENT QUANTITY */}
+
+                            <span>
+
+                              {
+                                item.quantity
+                              }
+
+                            </span>
+
+                            {/* PLUS */}
+
+                            <button
+                              type="button"
+
+                              aria-label="Increase quantity"
+
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item,
+                                  Number(
+                                    item.quantity
+                                  ) + 1
+                                )
+                              }
+
+                              disabled={
+                                updatingId ===
+                                  item.id ||
+                                Number(
+                                  item.quantity
+                                ) >=
+                                  Number(
+                                    product.stock
+                                  )
+                              }
+                            >
+
+                              <FaPlus />
+
+                            </button>
+
+                          </div>
+
+                          {/* =================================================
+                              LINE TOTAL
+                          ================================================= */}
+
+                          <div className="cart-line-total">
+
+                            Item total: $
+
+                            {(
+                              Number(
+                                product.price ||
+                                  0
+                              ) *
+                              Number(
+                                item.quantity ||
+                                  1
+                              )
+                            ).toFixed(
+                              2
+                            )}
+
+                          </div>
+
+                          {/* =================================================
+                              REMOVE
+                          ================================================= */}
+
+                          <button
+                            type="button"
+                            className="remove-item-btn"
+
+                            onClick={() =>
+                              handleRemove(
+                                item.id
+                              )
+                            }
+
+                            disabled={
+                              updatingId ===
+                              item.id
+                            }
+                          >
+
+                            <FaTrash />
+
+                            {updatingId ===
+                            item.id
+                              ? "Updating..."
+                              : "Remove"}
+
+                          </button>
+
+                        </div>
+
+                      </article>
+
+                    );
+                  }
+                )}
+
+              </div>
+
+              {/* ==========================================================
+                  CONTINUE SHOPPING
+              ========================================================== */}
+
+              <Link
+                to="/products"
+                className="back-shopping-link"
+              >
+
+                <FaArrowLeft />
+
+                Continue Shopping
+
+              </Link>
+
+            </section>
+
+            {/* ============================================================
+                RIGHT SIDE - ORDER SUMMARY
+            ============================================================ */}
+
+            <aside className="order-summary">
+
+              <h2>
+                Order Summary
+              </h2>
+
+              {/* SUBTOTAL */}
+
+              <div className="summary-row">
+
+                <span>
+                  Subtotal
+                </span>
+
+                <strong>
+
+                  $
+
+                  {subtotal.toFixed(
+                    2
+                  )}
+
+                </strong>
+
+              </div>
+
+              {/* SHIPPING */}
+
+              <div className="summary-row">
+
+                <span>
+                  Shipping
+                </span>
+
+                <strong>
+
+                  {shipping === 0
+                    ? "FREE"
+                    : `$${shipping.toFixed(
+                        2
+                      )}`}
+
+                </strong>
+
+              </div>
+
+              {/* ==========================================================
+                  FREE SHIPPING MESSAGE
+              ========================================================== */}
+
+              {subtotal > 0 &&
+                subtotal < 100 && (
+
+                  <div className="free-shipping-note">
+
+                    Spend $
+
+                    {(
+                      100 -
+                      subtotal
+                    ).toFixed(
+                      2
+                    )}{" "}
+
+                    more for free
+                    shipping.
+
+                  </div>
+
+                )}
+
+              <div className="summary-divider"></div>
+
+              {/* ==========================================================
+                  TOTAL
+              ========================================================== */}
+
+              <div className="summary-total">
+
+                <span>
+                  Total
+                </span>
+
+                <strong>
+
+                  $
+
+                  {total.toFixed(
+                    2
+                  )}
+
+                </strong>
+
+              </div>
+
+              {/* ==========================================================
+                  CHECKOUT
+              ========================================================== */}
+
+              <button
+                type="button"
+                className="checkout-btn"
+
+                onClick={() =>
+                  navigate(
+                    "/checkout"
+                  )
+                }
+
+                disabled={
+                  cartItems.length ===
+                  0
+                }
+              >
+
+                Proceed to Checkout
+
+              </button>
+
+              <p className="secure-checkout">
+
+                Secure checkout powered
+                by ShopEase
+
+              </p>
+
+            </aside>
+
+          </div>
+
+        )}
+
+      </div>
+
+    </main>
+
   );
 }
 
