@@ -1,5 +1,6 @@
 import Navbar from "../components/layout/Navbar";
 import Hero from "../components/home/Hero";
+import Categories from "../components/home/Categories";
 import FeaturedProducts from "../components/home/FeaturedProducts";
 import FlashDeals from "../components/home/FlashDeals";
 import BestSellers from "../components/home/BestSellers";
@@ -13,6 +14,8 @@ function Home() {
       <Navbar />
 
       <Hero />
+
+      <Categories />
 
       <FeaturedProducts />
 

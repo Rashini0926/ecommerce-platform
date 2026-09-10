@@ -23,6 +23,32 @@ import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { API_BASE_URL } from "../utils/api";
 
+/*
+==========================================================
+PRICE FORMATTER
+==========================================================
+
+IMPORTANT:
+
+The database "products.price" value is treated directly
+as Sri Lankan Rupees.
+
+Example:
+
+Database price = 285000
+Display        = Rs. 285,000.00
+
+No USD conversion is performed.
+==========================================================
+*/
+
+const formatPrice = (amount) => {
+  return `Rs. ${Number(amount || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
 function Products() {
   const [
     searchParams,
@@ -38,7 +64,6 @@ function Products() {
   const initialSearch =
     searchParams.get("search") || "";
 
-
   const API_URL = API_BASE_URL;
 
   const initialCategoryId =
@@ -46,10 +71,6 @@ function Products() {
 
   const initialSubcategoryId =
     searchParams.get("subcategory_id") || "";
-
-  const API_URL =
-    "http://127.0.0.1:8000/api";
- 
 
   /*
   ==========================================================
@@ -83,16 +104,12 @@ function Products() {
   const [
     categoryId,
     setCategoryId,
-  ] = useState(
-    initialCategoryId
-  );
+  ] = useState(initialCategoryId);
 
   const [
     subcategoryId,
     setSubcategoryId,
-  ] = useState(
-    initialSubcategoryId
-  );
+  ] = useState(initialSubcategoryId);
 
   const [brand, setBrand] =
     useState("");
@@ -153,10 +170,6 @@ function Products() {
       const params =
         new URLSearchParams();
 
-      /*
-      SEARCH
-      */
-
       if (filters.search) {
         params.append(
           "search",
@@ -164,35 +177,19 @@ function Products() {
         );
       }
 
-      /*
-      CATEGORY
-      */
-
-      if (
-        filters.categoryId
-      ) {
+      if (filters.categoryId) {
         params.append(
           "category_id",
           filters.categoryId
         );
       }
 
-      /*
-      SUBCATEGORY
-      */
-
-      if (
-        filters.subcategoryId
-      ) {
+      if (filters.subcategoryId) {
         params.append(
           "subcategory_id",
           filters.subcategoryId
         );
       }
-
-      /*
-      BRAND
-      */
 
       if (filters.brand) {
         params.append(
@@ -201,20 +198,12 @@ function Products() {
         );
       }
 
-      /*
-      COLOR
-      */
-
       if (filters.color) {
         params.append(
           "color",
           filters.color
         );
       }
-
-      /*
-      SIZE
-      */
 
       if (filters.size) {
         params.append(
@@ -224,7 +213,7 @@ function Products() {
       }
 
       /*
-      MIN PRICE
+      PRICE VALUES ARE ALREADY LKR
       */
 
       if (filters.minPrice) {
@@ -234,10 +223,6 @@ function Products() {
         );
       }
 
-      /*
-      MAX PRICE
-      */
-
       if (filters.maxPrice) {
         params.append(
           "max_price",
@@ -245,23 +230,23 @@ function Products() {
         );
       }
 
-      /*
-      MIN RATING
-      */
-
-      if (
-        filters.minRating
-      ) {
+      if (filters.minRating) {
         params.append(
           "min_rating",
           filters.minRating
         );
       }
 
+      const queryString =
+        params.toString();
+
+      const url =
+        queryString
+          ? `${API_URL}/products?${queryString}`
+          : `${API_URL}/products`;
+
       const response =
-        await fetch(
-          `${API_URL}/products?${params.toString()}`
-        );
+        await fetch(url);
 
       if (!response.ok) {
         throw new Error(
@@ -272,22 +257,12 @@ function Products() {
       const data =
         await response.json();
 
-      /*
-      Support either:
-      [...]
-      or
-      { products: [...] }
-      */
-
       const productList =
         Array.isArray(data)
           ? data
           : data.products || [];
 
-      setProducts(
-        productList
-      );
-
+      setProducts(productList);
     } catch (error) {
       console.error(
         "Product loading error:",
@@ -295,7 +270,6 @@ function Products() {
       );
 
       setProducts([]);
-
     } finally {
       setLoading(false);
     }
@@ -329,7 +303,6 @@ function Products() {
             ? data
             : data.categories || []
         );
-
       } catch (error) {
         console.error(
           "Category loading error:",
@@ -366,7 +339,6 @@ function Products() {
             ? data
             : data.subcategories || []
         );
-
       } catch (error) {
         console.error(
           "Subcategory loading error:",
@@ -377,33 +349,24 @@ function Products() {
 
   /*
   ==========================================================
-  FIRST PAGE LOAD
+  INITIAL LOAD
   ==========================================================
   */
 
   useEffect(() => {
     fetchCategories();
-
     fetchSubcategories();
   }, []);
 
   /*
   ==========================================================
-  READ URL PARAMETERS
-  ==========================================================
-  |
-  | Example:
-  |
-  | /products?category_id=2&subcategory_id=8
-  |
+  URL PARAMETER CHANGES
   ==========================================================
   */
 
   useEffect(() => {
     const urlSearch =
-      searchParams.get(
-        "search"
-      ) || "";
+      searchParams.get("search") || "";
 
     const urlCategoryId =
       searchParams.get(
@@ -415,9 +378,7 @@ function Products() {
         "subcategory_id"
       ) || "";
 
-    setSearch(
-      urlSearch
-    );
+    setSearch(urlSearch);
 
     setCategoryId(
       urlCategoryId
@@ -427,59 +388,34 @@ function Products() {
       urlSubcategoryId
     );
 
-    /*
-    Automatically load filtered products
-    */
-
     fetchProducts({
-      search:
-        urlSearch,
-
-      categoryId:
-        urlCategoryId,
-
+      search: urlSearch,
+      categoryId: urlCategoryId,
       subcategoryId:
         urlSubcategoryId,
-
-      brand:
-        "",
-
-      color:
-        "",
-
-      size:
-        "",
-
-      minPrice:
-        "",
-
-      maxPrice:
-        "",
-
-      minRating:
-        "",
+      brand: "",
+      color: "",
+      size: "",
+      minPrice: "",
+      maxPrice: "",
+      minRating: "",
     });
-
   }, [searchParams]);
 
   /*
   ==========================================================
-  GET SUBCATEGORIES FOR SELECTED CATEGORY
+  FILTERED SUBCATEGORIES
   ==========================================================
   */
 
   const filteredSubcategories =
     categoryId
       ? subcategories.filter(
-          (
-            subcategory
-          ) =>
+          (subcategory) =>
             String(
               subcategory.category_id
             ) ===
-            String(
-              categoryId
-            )
+            String(categoryId)
         )
       : [];
 
@@ -492,17 +428,10 @@ function Products() {
   const handleCategoryChange = (
     event
   ) => {
-    const selectedCategoryId =
+    const value =
       event.target.value;
 
-    setCategoryId(
-      selectedCategoryId
-    );
-
-    /*
-    Reset subcategory
-    when category changes.
-    */
+    setCategoryId(value);
 
     setSubcategoryId("");
   };
@@ -523,7 +452,7 @@ function Products() {
 
   /*
   ==========================================================
-  APPLY FILTER
+  APPLY FILTERS
   ==========================================================
   */
 
@@ -531,10 +460,6 @@ function Products() {
     event
   ) => {
     event.preventDefault();
-
-    /*
-    Update URL
-    */
 
     const params =
       new URLSearchParams();
@@ -560,13 +485,15 @@ function Products() {
       );
     }
 
-    setSearchParams(
-      params
-    );
+    /*
+    Keep category/search filters
+    visible in URL.
+    */
+
+    setSearchParams(params);
 
     /*
-    Fetch all filters,
-    including advanced filters.
+    Fetch complete filter set.
     */
 
     fetchProducts({
@@ -590,26 +517,14 @@ function Products() {
 
   const clearFilters = () => {
     setSearch("");
-
     setCategoryId("");
-
     setSubcategoryId("");
-
     setBrand("");
-
     setColor("");
-
     setSize("");
-
     setMinPrice("");
-
     setMaxPrice("");
-
     setMinRating("");
-
-    /*
-    Clear URL params
-    */
 
     setSearchParams({});
 
@@ -664,7 +579,7 @@ function Products() {
       String(image).trim();
 
     /*
-    Full URL
+    FULL URL
     */
 
     if (
@@ -679,7 +594,7 @@ function Products() {
     }
 
     /*
-    Laravel storage
+    LARAVEL STORAGE
     */
 
     if (
@@ -699,8 +614,7 @@ function Products() {
     }
 
     /*
-    Already:
-    images/products/file.jpg
+    FRONTEND PRODUCT IMAGE
     */
 
     if (
@@ -711,11 +625,6 @@ function Products() {
       return `/${cleanImage}`;
     }
 
-    /*
-    Already:
-    /images/products/file.jpg
-    */
-
     if (
       cleanImage.startsWith(
         "/images/products/"
@@ -725,7 +634,7 @@ function Products() {
     }
 
     /*
-    Only filename
+    FILE NAME ONLY
     */
 
     return `/images/products/${cleanImage}`;
@@ -733,24 +642,20 @@ function Products() {
 
   /*
   ==========================================================
-  FIND SELECTED CATEGORY
+  SELECTED CATEGORY
   ==========================================================
   */
 
   const selectedCategory =
     categories.find(
       (category) =>
-        String(
-          category.id
-        ) ===
-        String(
-          categoryId
-        )
+        String(category.id) ===
+        String(categoryId)
     );
 
   /*
   ==========================================================
-  FIND SELECTED SUBCATEGORY
+  SELECTED SUBCATEGORY
   ==========================================================
   */
 
@@ -777,9 +682,9 @@ function Products() {
 
       <main className="products-page">
 
-        {/* ================================================= */}
-        {/* PAGE HEADER */}
-        {/* ================================================= */}
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
 
         <section className="products-header">
 
@@ -818,23 +723,21 @@ function Products() {
 
         </section>
 
-        {/* ================================================= */}
-        {/* PRODUCTS AREA */}
-        {/* ================================================= */}
+        {/* =================================================
+            PRODUCTS CONTENT
+        ================================================= */}
 
         <section className="container products-content">
 
           <div className="row g-4">
 
-            {/* ================================================= */}
-            {/* FILTER SIDE */}
-            {/* ================================================= */}
+            {/* =================================================
+                FILTER PANEL
+            ================================================= */}
 
             <div className="col-12 col-lg-3">
 
               <div className="filter-card">
-
-                {/* FILTER HEADER */}
 
                 <div className="filter-title-area">
 
@@ -858,9 +761,7 @@ function Products() {
                   }
                 >
 
-                  {/* ======================================= */}
                   {/* SEARCH */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -875,9 +776,7 @@ function Products() {
                       <input
                         type="text"
                         placeholder="Product name..."
-                        value={
-                          search
-                        }
+                        value={search}
                         onChange={(
                           event
                         ) =>
@@ -893,9 +792,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* CATEGORY */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -943,9 +840,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* SUBCATEGORY */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -1012,9 +907,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* BRAND */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -1028,10 +921,8 @@ function Products() {
 
                     <input
                       type="text"
-                      placeholder="Example: Apple"
-                      value={
-                        brand
-                      }
+                      placeholder="Example: Samsung"
+                      value={brand}
                       onChange={(
                         event
                       ) =>
@@ -1045,9 +936,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* COLOR */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -1062,9 +951,7 @@ function Products() {
                     <input
                       type="text"
                       placeholder="Example: Black"
-                      value={
-                        color
-                      }
+                      value={color}
                       onChange={(
                         event
                       ) =>
@@ -1078,9 +965,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* SIZE */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -1091,9 +976,7 @@ function Products() {
                     <input
                       type="text"
                       placeholder="Example: M"
-                      value={
-                        size
-                      }
+                      value={size}
                       onChange={(
                         event
                       ) =>
@@ -1107,14 +990,12 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
-                  {/* PRICE */}
-                  {/* ======================================= */}
+                  {/* PRICE RANGE */}
 
                   <div className="filter-group">
 
                     <label>
-                      Price Range
+                      Price Range (Rs.)
                     </label>
 
                     <div className="price-inputs">
@@ -1122,8 +1003,8 @@ function Products() {
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        placeholder="Min"
+                        step="1"
+                        placeholder="Min Rs."
                         value={
                           minPrice
                         }
@@ -1145,8 +1026,8 @@ function Products() {
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        placeholder="Max"
+                        step="1"
+                        placeholder="Max Rs."
                         value={
                           maxPrice
                         }
@@ -1165,9 +1046,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* RATING */}
-                  {/* ======================================= */}
 
                   <div className="filter-group">
 
@@ -1214,9 +1093,7 @@ function Products() {
 
                   </div>
 
-                  {/* ======================================= */}
                   {/* ACTION BUTTONS */}
-                  {/* ======================================= */}
 
                   <div className="filter-actions">
 
@@ -1253,9 +1130,9 @@ function Products() {
 
             </div>
 
-            {/* ================================================= */}
-            {/* PRODUCTS */}
-            {/* ================================================= */}
+            {/* =================================================
+                PRODUCT AREA
+            ================================================= */}
 
             <div className="col-12 col-lg-9">
 
@@ -1344,7 +1221,9 @@ function Products() {
 
                 )}
 
-              {/* PRODUCTS GRID */}
+              {/* =================================================
+                  PRODUCTS GRID
+              ================================================= */}
 
               {!loading &&
                 products.length >
@@ -1440,7 +1319,7 @@ function Products() {
 
                               </div>
 
-                              {/* NAME */}
+                              {/* PRODUCT NAME */}
 
                               <h5>
                                 {
@@ -1496,7 +1375,7 @@ function Products() {
 
                               )}
 
-                              {/* COLOR / SIZE */}
+                              {/* COLOR + SIZE */}
 
                               <div className="product-details-row">
 
@@ -1544,21 +1423,16 @@ function Products() {
 
                               </div>
 
-                              {/* PRICE / DETAILS */}
+                              {/* =================================================
+                                  PRICE + DETAILS
+                              ================================================= */}
 
                               <div className="product-card-bottom">
 
                                 <div className="product-price">
 
-                                  <span>
-                                    $
-                                  </span>
-
-                                  {Number(
-                                    product.price ||
-                                      0
-                                  ).toFixed(
-                                    2
+                                  {formatPrice(
+                                    product.price
                                   )}
 
                                 </div>

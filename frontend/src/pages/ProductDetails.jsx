@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { addToCart } from "../services/cartService";
 import { getProduct } from "../services/productService";
 
+
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
