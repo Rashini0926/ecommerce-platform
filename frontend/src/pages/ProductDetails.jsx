@@ -8,6 +8,15 @@ function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
+
+const formatPrice = (amount) =>
+  `Rs. ${Number(amount || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+
+
   useEffect(() => {
     setLoading(true);
     fetch(`http://127.0.0.1:8000/api/products/${id}`)
