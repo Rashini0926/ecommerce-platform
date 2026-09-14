@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -21,8 +22,10 @@ class OrderCheckoutTest extends TestCase
         Sanctum::actingAs($customer);
 
         $response = $this->postJson('/api/orders', [
+            'checkout_token' => (string) Str::uuid(),
             'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
             'payment_method' => 'COD',
+            'total_amount' => 1,
         ]);
 
         $response->assertCreated()
@@ -46,6 +49,7 @@ class OrderCheckoutTest extends TestCase
         Sanctum::actingAs($customer);
 
         $this->postJson('/api/orders', [
+            'checkout_token' => (string) Str::uuid(),
             'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
             'payment_method' => 'CARD',
         ])->assertCreated()->assertJsonPath('order.payment_status', 'PENDING');
@@ -58,12 +62,94 @@ class OrderCheckoutTest extends TestCase
         Sanctum::actingAs($customer);
 
         $this->postJson('/api/orders', [
+            'checkout_token' => (string) Str::uuid(),
             'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
             'payment_method' => 'COD',
         ])->assertCreated();
 
         $this->assertDatabaseHas('orders', ['user_id' => $customer->id, 'total_amount' => 6000]);
         $this->assertDatabaseHas('order_items', ['product_id' => $product->id, 'unit_price' => 2000, 'subtotal' => 6000]);
+    }
+
+    public function test_retrying_the_same_checkout_returns_the_original_order(): void
+    {
+        [$customer, $product] = $this->createCheckoutData();
+        $checkoutToken = (string) Str::uuid();
+        Sanctum::actingAs($customer);
+
+        $payload = [
+            'checkout_token' => $checkoutToken,
+            'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
+            'payment_method' => 'COD',
+        ];
+
+        $firstOrderId = $this->postJson('/api/orders', $payload)
+            ->assertCreated()
+            ->json('order.id');
+
+        $this->postJson('/api/orders', $payload)
+            ->assertOk()
+            ->assertJsonPath('message', 'This checkout was already completed.')
+            ->assertJsonPath('order.id', $firstOrderId);
+
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('user_notifications', 1);
+        $this->assertSame(7, $product->fresh()->stock);
+    }
+
+    public function test_checkout_rolls_back_when_stock_changed_after_cart_was_loaded(): void
+    {
+        [$customer, $product] = $this->createCheckoutData();
+        $product->update(['stock' => 2]);
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/orders', [
+            'checkout_token' => (string) Str::uuid(),
+            'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
+            'payment_method' => 'COD',
+        ])->assertUnprocessable()->assertJsonValidationErrors('cart');
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseHas('cart_items', [
+            'user_id' => $customer->id,
+            'product_id' => $product->id,
+            'quantity' => 3,
+        ]);
+        $this->assertSame(2, $product->fresh()->stock);
+    }
+
+    public function test_checkout_requires_a_valid_idempotency_token(): void
+    {
+        [$customer] = $this->createCheckoutData();
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/orders', [
+            'checkout_token' => 'invalid-token',
+            'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
+            'payment_method' => 'COD',
+        ])->assertUnprocessable()->assertJsonValidationErrors('checkout_token');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_checkout_tokens_are_scoped_to_each_customer(): void
+    {
+        [$firstCustomer] = $this->createCheckoutData();
+        [$secondCustomer] = $this->createCheckoutData();
+        $checkoutToken = (string) Str::uuid();
+        $payload = [
+            'checkout_token' => $checkoutToken,
+            'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
+            'payment_method' => 'COD',
+        ];
+
+        Sanctum::actingAs($firstCustomer);
+        $this->postJson('/api/orders', $payload)->assertCreated();
+
+        Sanctum::actingAs($secondCustomer);
+        $this->postJson('/api/orders', $payload)->assertCreated();
+
+        $this->assertDatabaseCount('orders', 2);
     }
 
     private function createCheckoutData(): array

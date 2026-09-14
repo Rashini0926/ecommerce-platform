@@ -7,6 +7,7 @@ use App\Mail\OrderUpdateMail;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,9 +32,21 @@ class OrderController extends Controller
         $this->ensureCustomer($request);
         $validated = $this->validatedCheckoutData($request);
 
-        $order = DB::transaction(function () use ($request, $validated) {
+        [$order, $wasCreated] = DB::transaction(function () use ($request, $validated) {
+            $customer = User::whereKey($request->user()->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $existingOrder = $customer->orders()
+                ->where('checkout_token', $validated['checkout_token'])
+                ->first();
+
+            if ($existingOrder) {
+                return [$existingOrder, false];
+            }
+
             $cartItems = CartItem::where('user_id', $request->user()->id)
-                ->with('product')
+                ->orderBy('product_id')
                 ->lockForUpdate()
                 ->get();
 
@@ -43,13 +56,18 @@ class OrderController extends Controller
 
             $totalAmount = 0;
             $orderItems = [];
+            $products = Product::whereIn('id', $cartItems->pluck('product_id'))
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
 
             foreach ($cartItems as $cartItem) {
-                $product = Product::lockForUpdate()->find($cartItem->product_id);
+                $product = $products->get($cartItem->product_id);
 
                 if (! $product || $product->stock < $cartItem->quantity) {
                     throw ValidationException::withMessages([
-                        'cart' => "{$cartItem->product?->name} is no longer available in the requested quantity.",
+                        'cart' => ($product?->name ?? 'A product').' is no longer available in the requested quantity.',
                     ]);
                 }
 
@@ -67,8 +85,9 @@ class OrderController extends Controller
                 $product->decrement('stock', $cartItem->quantity);
             }
 
-            $order = $request->user()->orders()->create([
+            $order = $customer->orders()->create([
                 'order_number' => $this->generateOrderNumber(),
+                'checkout_token' => $validated['checkout_token'],
                 'shipping_address' => $validated['shipping_address'],
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => 'PENDING',
@@ -79,17 +98,20 @@ class OrderController extends Controller
             $order->items()->createMany($orderItems);
             CartItem::where('user_id', $request->user()->id)->delete();
 
-            return $order;
+            return [$order, true];
         });
 
         $order->load('items.product');
-        $this->notifyCustomer($order, 'ORDER', 'Order placed successfully', "Your order {$order->order_number} is now being processed.");
+
+        if ($wasCreated) {
+            $this->notifyCustomer($order, 'ORDER', 'Order placed successfully', "Your order {$order->order_number} is now being processed.");
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Order placed successfully.',
+            'message' => $wasCreated ? 'Order placed successfully.' : 'This checkout was already completed.',
             'order' => $order,
-        ], 201);
+        ], $wasCreated ? 201 : 200);
     }
 
     public function index(Request $request): JsonResponse
@@ -265,6 +287,7 @@ class OrderController extends Controller
     private function validatedCheckoutData(Request $request): array
     {
         return $request->validate([
+            'checkout_token' => ['required', 'uuid'],
             'shipping_address' => ['required', 'string', 'min:10', 'max:2000'],
             'payment_method' => ['required', Rule::in(['COD', 'CARD'])],
         ]);

@@ -9,9 +9,14 @@ class Order extends Model
 {
     use HasFactory;
 
+    protected $hidden = [
+        'checkout_token',
+    ];
+
     protected $fillable = [
         'order_number',
         'user_id',
+        'checkout_token',
         'shipping_address',
         'courier_name',
         'tracking_number',
