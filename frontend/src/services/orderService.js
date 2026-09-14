@@ -52,6 +52,26 @@ export const updateOrderStatus = async (token, orderId, orderStatus) => {
   return response.data;
 };
 
+export const initiateDemoPayment = async (token, orderId) => {
+  const response = await api.post(
+    `/orders/${orderId}/payment/initiate`,
+    {},
+    authConfig(token)
+  );
+
+  return response.data;
+};
+
+export const completeDemoPayment = async (token, orderId) => {
+  const response = await api.post(
+    `/orders/${orderId}/payment/complete`,
+    {},
+    authConfig(token)
+  );
+
+  return response.data;
+};
+
 export const updateShipping = async (token, orderId, shippingData) => {
   const response = await api.patch(
     `/admin/orders/${orderId}/shipping`,

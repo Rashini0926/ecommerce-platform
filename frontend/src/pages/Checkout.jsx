@@ -78,8 +78,13 @@ function Checkout() {
         payment_method: paymentMethod,
       });
 
-      showToast("Order placed successfully.", "success");
-      navigate(`/order-success?order=${response.order.id}`, { state: { order: response.order } });
+      if (paymentMethod === "CARD") {
+        showToast("Order created. Complete the demo card payment.", "info");
+        navigate(`/orders/${response.order.id}/payment`, { state: { order: response.order } });
+      } else {
+        showToast("Order placed successfully.", "success");
+        navigate(`/order-success?order=${response.order.id}`, { state: { order: response.order } });
+      }
     } catch (error) {
       const validationErrors = error.response?.data?.errors;
       const message = validationErrors

@@ -22,9 +22,17 @@ class DemoPaymentTest extends TestCase
             ->assertOk()->assertJsonPath('payment.status', 'PENDING');
 
         $this->postJson("/api/orders/{$order->id}/payment/complete")
-            ->assertOk()->assertJsonPath('payment.status', 'PAID');
+            ->assertOk()
+            ->assertJsonPath('payment.status', 'PAID')
+            ->assertJsonPath('order.payment_status', 'PAID');
+
+        $this->postJson("/api/orders/{$order->id}/payment/complete")
+            ->assertOk()
+            ->assertJsonPath('message', 'Payment is already complete.')
+            ->assertJsonPath('order.id', $order->id);
 
         $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'status' => 'PAID', 'provider' => 'DEMO']);
+        $this->assertDatabaseCount('user_notifications', 1);
         $this->assertSame('PAID', $order->fresh()->payment_status);
     }
 
@@ -41,6 +49,33 @@ class DemoPaymentTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'status' => 'PENDING']);
+        $this->assertDatabaseCount('user_notifications', 0);
         $this->assertSame('PENDING', $order->fresh()->payment_status);
+    }
+
+    public function test_cash_on_delivery_order_cannot_use_card_gateway(): void
+    {
+        $customer = User::create(['full_name' => 'Customer', 'email' => 'cod@example.com', 'phone' => '0771234567', 'password' => 'password123', 'role' => 'CUSTOMER']);
+        $order = Order::create(['user_id' => $customer->id, 'order_number' => 'PAY-003', 'shipping_address' => '10 Main Street, Colombo', 'payment_method' => 'COD', 'payment_status' => 'PENDING', 'total_amount' => 1500, 'order_status' => 'PROCESSING']);
+        Sanctum::actingAs($customer);
+
+        $this->postJson("/api/orders/{$order->id}/payment/initiate")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('order');
+
+        $this->assertDatabaseMissing('payments', ['order_id' => $order->id]);
+    }
+
+    public function test_customer_cannot_pay_for_another_customers_order(): void
+    {
+        $owner = User::create(['full_name' => 'Owner', 'email' => 'owner@example.com', 'phone' => '0771234567', 'password' => 'password123', 'role' => 'CUSTOMER']);
+        $otherCustomer = User::create(['full_name' => 'Other', 'email' => 'other@example.com', 'phone' => '0777654321', 'password' => 'password123', 'role' => 'CUSTOMER']);
+        $order = Order::create(['user_id' => $owner->id, 'order_number' => 'PAY-004', 'shipping_address' => '10 Main Street, Colombo', 'payment_method' => 'CARD', 'payment_status' => 'PENDING', 'total_amount' => 1500, 'order_status' => 'PROCESSING']);
+        Sanctum::actingAs($otherCustomer);
+
+        $this->postJson("/api/orders/{$order->id}/payment/initiate")
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payments', ['order_id' => $order->id]);
     }
 }

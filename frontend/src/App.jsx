@@ -25,6 +25,7 @@ import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import OrderDetails from "./pages/OrderDetails";
 import OrderSuccess from "./pages/OrderSuccess";
+import DemoPayment from "./pages/DemoPayment";
 
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
@@ -120,6 +121,15 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["customer"]}>
             <OrderSuccess />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/orders/:id/payment"
+        element={
+          <ProtectedRoute allowedRoles={["customer"]}>
+            <DemoPayment />
           </ProtectedRoute>
         }
       />
