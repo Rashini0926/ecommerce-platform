@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Contracts\PaymentGateway;
+use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
@@ -14,9 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class DemoPaymentController extends Controller
 {
-    public function __construct(private PaymentGateway $gateway)
-    {
-    }
+    public function __construct(private PaymentGateway $gateway) {}
 
     public function initiate(Request $request, Order $order): JsonResponse
     {
@@ -32,7 +30,7 @@ class DemoPaymentController extends Controller
 
         $payment = Payment::firstOrCreate(
             ['order_id' => $order->id],
-            ['provider' => 'DEMO', 'reference' => 'DEMO-' . Str::upper(Str::random(12)), 'amount' => $order->total_amount, 'currency' => 'LKR'],
+            ['provider' => 'DEMO', 'reference' => 'DEMO-'.Str::upper(Str::random(12)), 'amount' => $order->total_amount, 'currency' => 'LKR'],
         );
 
         return response()->json([
@@ -45,9 +43,14 @@ class DemoPaymentController extends Controller
     public function complete(Request $request, Order $order): JsonResponse
     {
         $this->ensureOwner($request, $order);
+
+        if ($order->order_status === 'CANCELLED') {
+            throw ValidationException::withMessages(['order' => 'Cancelled orders cannot be paid.']);
+        }
+
         $payment = $order->payment;
 
-        if (!$payment) {
+        if (! $payment) {
             throw ValidationException::withMessages(['payment' => 'Initiate the payment before completing it.']);
         }
 

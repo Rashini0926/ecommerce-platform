@@ -3,21 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OrderUpdateMail;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\UserNotification;
-use App\Mail\OrderUpdateMail;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private const STATUS_TRANSITIONS = [
+        'PENDING' => ['PROCESSING', 'CANCELLED'],
+        'PROCESSING' => ['SHIPPED', 'CANCELLED'],
+        'SHIPPED' => ['DELIVERED'],
+        'DELIVERED' => [],
+        'CANCELLED' => [],
+    ];
+
     public function store(Request $request): JsonResponse
     {
         $this->ensureCustomer($request);
@@ -39,7 +47,7 @@ class OrderController extends Controller
             foreach ($cartItems as $cartItem) {
                 $product = Product::lockForUpdate()->find($cartItem->product_id);
 
-                if (!$product || $product->stock < $cartItem->quantity) {
+                if (! $product || $product->stock < $cartItem->quantity) {
                     throw ValidationException::withMessages([
                         'cart' => "{$cartItem->product?->name} is no longer available in the requested quantity.",
                     ]);
@@ -121,11 +129,7 @@ class OrderController extends Controller
             'order_status' => ['required', Rule::in(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
         ]);
 
-        if ($order->order_status === 'CANCELLED' && $validated['order_status'] !== 'CANCELLED') {
-            throw ValidationException::withMessages([
-                'order_status' => 'A cancelled order cannot be reactivated.',
-            ]);
-        }
+        $this->validateStatusTransition($order, $validated['order_status']);
 
         DB::transaction(function () use ($order, $validated) {
             if ($validated['order_status'] === 'CANCELLED' && $order->order_status !== 'CANCELLED') {
@@ -159,8 +163,12 @@ class OrderController extends Controller
     {
         $this->ensureAdmin($request);
 
-        if (in_array($order->order_status, ['DELIVERED', 'CANCELLED'], true)) {
-            throw ValidationException::withMessages(['order' => 'Shipping cannot be updated for delivered or cancelled orders.']);
+        if (! in_array($order->order_status, ['PROCESSING', 'SHIPPED'], true)) {
+            throw ValidationException::withMessages(['order' => 'Only processing or shipped orders can have shipping details updated.']);
+        }
+
+        if ($order->payment_method === 'CARD' && $order->payment_status !== 'PAID') {
+            throw ValidationException::withMessages(['payment' => 'Card payment must be completed before dispatch.']);
         }
 
         $data = $request->validate([
@@ -228,6 +236,12 @@ class OrderController extends Controller
             ]);
         }
 
+        if ($order->payment_status === 'PAID') {
+            throw ValidationException::withMessages([
+                'order' => 'Paid orders require a refund before cancellation.',
+            ]);
+        }
+
         DB::transaction(function () use ($order) {
             $order->load('items');
 
@@ -265,10 +279,37 @@ class OrderController extends Controller
         abort_unless($request->user()->role === 'ADMIN', 403, 'Administrator access is required.');
     }
 
+    private function validateStatusTransition(Order $order, string $nextStatus): void
+    {
+        if ($nextStatus === $order->order_status) {
+            return;
+        }
+
+        $allowedStatuses = self::STATUS_TRANSITIONS[$order->order_status] ?? [];
+
+        if (! in_array($nextStatus, $allowedStatuses, true)) {
+            throw ValidationException::withMessages([
+                'order_status' => "Order status cannot change from {$order->order_status} to {$nextStatus}.",
+            ]);
+        }
+
+        if ($nextStatus === 'SHIPPED' && (! $order->courier_name || ! $order->tracking_number)) {
+            throw ValidationException::withMessages([
+                'order_status' => 'Add courier and tracking details before marking the order as shipped.',
+            ]);
+        }
+
+        if ($nextStatus === 'CANCELLED' && $order->payment_status === 'PAID') {
+            throw ValidationException::withMessages([
+                'order_status' => 'Paid orders require a refund before cancellation.',
+            ]);
+        }
+    }
+
     private function generateOrderNumber(): string
     {
         do {
-            $orderNumber = 'SE-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
+            $orderNumber = 'SE-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
         } while (Order::where('order_number', $orderNumber)->exists());
 
         return $orderNumber;

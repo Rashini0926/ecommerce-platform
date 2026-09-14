@@ -27,4 +27,20 @@ class DemoPaymentTest extends TestCase
         $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'status' => 'PAID', 'provider' => 'DEMO']);
         $this->assertSame('PAID', $order->fresh()->payment_status);
     }
+
+    public function test_customer_cannot_complete_payment_after_order_is_cancelled(): void
+    {
+        $customer = User::create(['full_name' => 'Customer', 'email' => 'cancelled@example.com', 'phone' => '0771234567', 'password' => 'password123', 'role' => 'CUSTOMER']);
+        $order = Order::create(['user_id' => $customer->id, 'order_number' => 'PAY-002', 'shipping_address' => '10 Main Street, Colombo', 'payment_method' => 'CARD', 'payment_status' => 'PENDING', 'total_amount' => 1500, 'order_status' => 'PROCESSING']);
+        Sanctum::actingAs($customer);
+
+        $this->postJson("/api/orders/{$order->id}/payment/initiate")->assertOk();
+        $order->update(['order_status' => 'CANCELLED']);
+
+        $this->postJson("/api/orders/{$order->id}/payment/complete")
+            ->assertUnprocessable();
+
+        $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'status' => 'PENDING']);
+        $this->assertSame('PENDING', $order->fresh()->payment_status);
+    }
 }

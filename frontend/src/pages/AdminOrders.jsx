@@ -7,8 +7,15 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { getAdminOrders, updateOrderStatus, updateShipping } from "../services/orderService";
 
-const statuses = ["PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 const formatPrice = (amount) => `Rs. ${Number(amount || 0).toLocaleString("en-LK")}`;
+const statusOptionsFor = (order) => {
+  if (order.order_status === "PENDING") return ["PENDING", "PROCESSING", "CANCELLED"];
+  if (order.order_status === "PROCESSING") return order.payment_status === "PAID" ? ["PROCESSING"] : ["PROCESSING", "CANCELLED"];
+  if (order.order_status === "SHIPPED") return ["SHIPPED", "DELIVERED"];
+  return [order.order_status];
+};
+const canDispatch = (order) => !["DELIVERED", "CANCELLED"].includes(order.order_status)
+  && (order.payment_method !== "CARD" || order.payment_status === "PAID");
 
 function AdminOrders() {
   const { token } = useAuth();
@@ -91,9 +98,9 @@ function AdminOrders() {
           <td><strong>{order.user?.full_name}</strong><small className="d-block text-muted">{order.user?.email}<br />{order.user?.phone}</small></td>
           <td>{order.items?.map((item) => <small className="d-block" key={item.id}>{item.product_name} × {item.quantity}</small>)}</td>
           <td>{order.payment_method === "CARD" ? "Card (Demo)" : "COD"}<small className={`d-block ${order.payment_status === "PAID" ? "text-success" : "text-warning"}`}>{order.payment_status}</small></td>
-          <td>{order.courier_name ? <><strong className="d-block">{order.courier_name}</strong><small className="d-block text-muted">{order.tracking_number}</small></> : <span className="text-muted small">Not dispatched</span>}<button className="btn btn-sm btn-outline-primary mt-2" disabled={order.order_status === "DELIVERED" || order.order_status === "CANCELLED"} onClick={() => openShipping(order)}>{order.tracking_number ? "Edit shipment" : "Dispatch"}</button></td>
+          <td>{order.courier_name ? <><strong className="d-block">{order.courier_name}</strong><small className="d-block text-muted">{order.tracking_number}</small></> : <span className="text-muted small">Not dispatched</span>}<button className="btn btn-sm btn-outline-primary mt-2" disabled={!canDispatch(order)} onClick={() => openShipping(order)}>{order.tracking_number ? "Edit shipment" : order.payment_method === "CARD" && order.payment_status !== "PAID" ? "Awaiting payment" : "Dispatch"}</button></td>
           <td><strong>{formatPrice(order.total_amount)}</strong></td>
-          <td><select className="form-select form-select-sm" disabled={updatingId === order.id || order.order_status === "CANCELLED"} value={order.order_status} onChange={(event) => changeStatus(order, event.target.value)}>{statuses.map((status) => <option value={status} key={status}>{status}</option>)}</select></td>
+          <td><select className="form-select form-select-sm" disabled={updatingId === order.id || statusOptionsFor(order).length === 1} value={order.order_status} onChange={(event) => changeStatus(order, event.target.value)}>{statusOptionsFor(order).map((status) => <option value={status} key={status}>{status}</option>)}</select></td>
         </tr>)}</tbody>
       </table></div></div>}
     </main>
