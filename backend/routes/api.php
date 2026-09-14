@@ -16,12 +16,10 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\SellerOrderController;
 
-// use App\Http\Controllers\Api\OrderController;
-
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -32,7 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::patch('/profile', [AuthController::class, 'updateProfile']);
     Route::patch('/profile/password', [AuthController::class, 'changePassword']);
-    Route::get('/addresses', [AddressController::class, 'index']); Route::post('/addresses', [AddressController::class, 'store']); Route::put('/addresses/{address}', [AddressController::class, 'update']); Route::delete('/addresses/{address}', [AddressController::class, 'destroy']);
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::post('/addresses', [AddressController::class, 'store']);
+    Route::put('/addresses/{address}', [AddressController::class, 'update']);
+    Route::delete('/addresses/{address}', [AddressController::class, 'destroy']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -79,11 +80,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/categories/{category}/subcategories', [CategoryController::class, 'storeSubcategory']);
     Route::delete('/subcategories/{subcategory}', [CategoryController::class, 'destroySubcategory']);
 
-    /*
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
-    */
 });
 
 Route::get('/categories', [CategoryController::class, 'index']);
@@ -91,9 +87,3 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/products/{product}/reviews', [ProductReviewController::class, 'index']);
-
-Route::get('/test', function () {
-    return response()->json([
-        'message' => 'API is working'
-    ]);
-});
