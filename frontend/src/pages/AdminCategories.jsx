@@ -19,7 +19,15 @@ function AdminCategories() {
     try { setCategories(await getCategories()); }
     catch (error) { showToast(error.response?.data?.message || "Could not load categories.", "danger"); }
   };
-  useEffect(() => { loadCategories(); }, [token]);
+  useEffect(() => {
+    let cancelled = false;
+
+    getCategories()
+      .then((data) => { if (!cancelled) setCategories(data); })
+      .catch((error) => { if (!cancelled) showToast(error.response?.data?.message || "Could not load categories.", "danger"); });
+
+    return () => { cancelled = true; };
+  }, [showToast]);
 
   const addCategory = async (event) => {
     event.preventDefault(); setIsSaving(true);

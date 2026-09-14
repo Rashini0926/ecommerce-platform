@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -24,7 +24,7 @@ function Profile() {
   const [passwords, setPasswords] = useState({ current_password: "", password: "", password_confirmation: "" });
   const [addresses, setAddresses] = useState([]);
   const [address, setAddress] = useState({ label: "Home", recipient_name: user?.full_name || "", phone: user?.phone || "", address: "", is_default: false });
-  const authConfig = { headers: { Authorization: `Bearer ${token}` } };
+  const authConfig = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   const saveProfile = async (event) => {
     event.preventDefault();
@@ -36,7 +36,7 @@ function Profile() {
     try { const response = await api.patch("/profile/password", passwords, authConfig); showToast(response.data.message, "success"); logout(); navigate("/login"); }
     catch (err) { showToast(err.response?.data?.message || "Unable to change password.", "danger"); }
   };
-  useEffect(() => { api.get("/addresses", authConfig).then((response) => setAddresses(response.data.addresses || [])).catch(() => {}); }, []);
+  useEffect(() => { api.get("/addresses", authConfig).then((response) => setAddresses(response.data.addresses || [])).catch(() => {}); }, [authConfig]);
   const saveAddress = async (event) => { event.preventDefault(); try { const response = await api.post("/addresses", address, authConfig); setAddresses((items) => [response.data.address, ...items]); setAddress({ label: "Home", recipient_name: user?.full_name || "", phone: user?.phone || "", address: "", is_default: false }); showToast("Address saved.", "success"); } catch { showToast("Unable to save address.", "danger"); } };
   const deleteAddress = async (id) => { await api.delete(`/addresses/${id}`, authConfig); setAddresses((items) => items.filter((item) => item.id !== id)); };
 

@@ -22,18 +22,16 @@ function MyOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
 
-  const loadOrders = async () => {
-    try {
-      const response = await getOrders(token);
-      setOrders(response.orders || []);
-    } catch (error) {
-      showToast(error.response?.data?.message || "Could not load your orders.", "danger");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
 
-  useEffect(() => { loadOrders(); }, [token]);
+    getOrders(token)
+      .then((response) => { if (!cancelled) setOrders(response.orders || []); })
+      .catch((error) => { if (!cancelled) showToast(error.response?.data?.message || "Could not load your orders.", "danger"); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [showToast, token]);
 
   const handleCancel = async (orderId) => {
     if (!window.confirm("Cancel this order? Stock will be returned to inventory.")) return;

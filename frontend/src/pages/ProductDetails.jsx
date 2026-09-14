@@ -8,8 +8,7 @@ import api from '../utils/api';
 
 function ProductDetails() {
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [productResult, setProductResult] = useState({ id: null, product: null });
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -20,21 +19,27 @@ function ProductDetails() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
+
     getProduct(id)
       .then((data) => {
-        setProduct(data);
-        setLoading(false);
+        if (!cancelled) setProductResult({ id, product: data });
       })
       .catch((err) => {
         console.error('Failed to load product:', err);
-        setLoading(false);
+        if (!cancelled) setProductResult({ id, product: null });
       });
+
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
     api.get(`/products/${id}/reviews`).then((response) => setReviews(response.data.data || [])).catch(() => setReviews([]));
   }, [id]);
+
+  const hasLoadedProduct = String(productResult.id) === String(id);
+  const product = hasLoadedProduct ? productResult.product : null;
+  const loading = !hasLoadedProduct;
 
   const submitReview = async (event) => {
     event.preventDefault();

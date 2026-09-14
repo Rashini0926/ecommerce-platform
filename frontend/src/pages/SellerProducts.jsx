@@ -21,7 +21,20 @@ function SellerProducts() {
     try { setProducts(await getMyProducts(token)); setCategories(await getCategories()); }
     catch (error) { showToast(error.response?.data?.message || "Could not load product management data.", "danger"); }
   };
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([getMyProducts(token), getCategories()])
+      .then(([productData, categoryData]) => {
+        if (!cancelled) {
+          setProducts(productData);
+          setCategories(categoryData);
+        }
+      })
+      .catch((error) => { if (!cancelled) showToast(error.response?.data?.message || "Could not load product management data.", "danger"); });
+
+    return () => { cancelled = true; };
+  }, [showToast, token]);
 
   const selectedCategory = categories.find((category) => String(category.id) === String(form.category_id));
   const change = (event) => setForm({ ...form, [event.target.name]: event.target.value, ...(event.target.name === "category_id" ? { subcategory_id: "" } : {}) });

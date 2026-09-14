@@ -252,99 +252,40 @@ function Products() {
 
   /*
   ==========================================================
-  FETCH CATEGORIES
-  ==========================================================
-  */
-
-  const fetchCategories =
-    async () => {
-      try {
-        const response =
-          await fetch(
-            `${API_URL}/categories`
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Unable to fetch categories."
-          );
-        }
-
-        const data =
-          await response.json();
-
-        setCategories(data);
-
-      } catch (error) {
-
-        console.error(
-          "Category loading error:",
-          error
-        );
-
-      }
-    };
-
-  /*
-  ==========================================================
-  FETCH SUBCATEGORIES
-  ==========================================================
-  */
-
-  const fetchSubcategories =
-    async () => {
-      try {
-        const response =
-          await fetch(
-            `${API_URL}/subcategories`
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Unable to fetch subcategories."
-          );
-        }
-
-        const data =
-          await response.json();
-
-        setSubcategories(data);
-
-      } catch (error) {
-
-        console.error(
-          "Subcategory loading error:",
-          error
-        );
-
-      }
-    };
-
-  /*
-  ==========================================================
   FIRST PAGE LOAD
   ==========================================================
   */
 
   useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (initialSearch) params.set("search", initialSearch);
 
-    fetchCategories();
+    Promise.all([
+      fetch(`${API_URL}/categories`),
+      fetch(`${API_URL}/products?${params.toString()}`),
+    ])
+      .then(async ([categoryResponse, productResponse]) => {
+        if (!categoryResponse.ok || !productResponse.ok) throw new Error("Unable to load product catalogue.");
+        return Promise.all([categoryResponse.json(), productResponse.json()]);
+      })
+      .then(([categoryData, productData]) => {
+        if (cancelled) return;
+        setCategories(categoryData);
+        setSubcategories(categoryData.flatMap((category) => category.subcategories || []));
+        setProducts(productData);
+        setSearch(initialSearch);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Catalogue loading error:", error);
+          setProducts([]);
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
 
-    fetchSubcategories();
-
-    fetchProducts({
-      search: initialSearch,
-      categoryId: "",
-      subcategoryId: "",
-      brand: "",
-      color: "",
-      size: "",
-      minPrice: "",
-      maxPrice: "",
-      minRating: "",
-    });
-
-  }, []);
+    return () => { cancelled = true; };
+  }, [API_URL, initialSearch]);
 
   /*
   ==========================================================
