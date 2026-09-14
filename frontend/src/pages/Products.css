@@ -652,6 +652,11 @@
   background: #ef4444;
 }
 
+.wishlist-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 
 /* =========================================================
    CATEGORY BADGE

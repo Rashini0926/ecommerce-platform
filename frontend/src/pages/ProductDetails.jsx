@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { addToCart } from '../services/customerService';
+import { addToCart, addToWishlist, getWishlist, removeFromWishlist } from '../services/customerService';
 import { getProduct } from '../services/productService';
 import api from '../utils/api';
 
@@ -14,9 +15,15 @@ function ProductDetails() {
   const [isAdding, setIsAdding] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [review, setReview] = useState({ rating: 5, comment: '' });
+  const [wishlistItemId, setWishlistItemId] = useState(null);
+  const [wishlistOwnerId, setWishlistOwnerId] = useState(null);
+  const [wishlistProductId, setWishlistProductId] = useState(null);
+  const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
   const { token, user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const userRole = user?.role;
+  const userId = user?.id;
 
   useEffect(() => {
     let cancelled = false;
@@ -37,9 +44,38 @@ function ProductDetails() {
     api.get(`/products/${id}/reviews`).then((response) => setReviews(response.data.data || [])).catch(() => setReviews([]));
   }, [id]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token || userRole !== 'customer') {
+      return () => { cancelled = true; };
+    }
+
+    getWishlist(token)
+      .then((response) => {
+        if (cancelled) return;
+
+        const savedItem = (response.items || []).find(
+          (item) => String(item.product_id) === String(id)
+        );
+        setWishlistItemId(savedItem?.id || null);
+        setWishlistOwnerId(userId);
+        setWishlistProductId(id);
+      })
+      .catch((error) => {
+        if (!cancelled) console.error('Wishlist loading error:', error);
+      });
+
+    return () => { cancelled = true; };
+  }, [id, token, userId, userRole]);
+
   const hasLoadedProduct = String(productResult.id) === String(id);
   const product = hasLoadedProduct ? productResult.product : null;
   const loading = !hasLoadedProduct;
+  const activeWishlistItemId = wishlistOwnerId === userId &&
+    String(wishlistProductId) === String(id)
+    ? wishlistItemId
+    : null;
 
   const submitReview = async (event) => {
     event.preventDefault();
@@ -73,6 +109,42 @@ function ProductDetails() {
       showToast(err.response?.data?.message || 'Unable to add product to cart.', 'danger');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleWishlist = async () => {
+    if (!token) {
+      showToast('Please log in to save products to your wishlist.', 'info');
+      navigate('/login');
+      return;
+    }
+
+    if (userRole !== 'customer') {
+      showToast('Only customer accounts can use the wishlist.', 'warning');
+      return;
+    }
+
+    setIsUpdatingWishlist(true);
+
+    try {
+      if (activeWishlistItemId) {
+        await removeFromWishlist(token, activeWishlistItemId);
+        setWishlistItemId(null);
+        showToast('Product removed from wishlist.', 'info');
+      } else {
+        const response = await addToWishlist(token, product.id);
+        setWishlistItemId(response.item.id);
+        setWishlistOwnerId(userId);
+        setWishlistProductId(product.id);
+        showToast('Product added to wishlist.', 'success');
+      }
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || 'Unable to update your wishlist.',
+        'danger'
+      );
+    } finally {
+      setIsUpdatingWishlist(false);
     }
   };
 
@@ -385,6 +457,21 @@ function ProductDetails() {
                   {isAdding ? 'Adding...' : added ? '✓ Added to Cart' : product.stock < 1 ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
+
+              <button
+                type="button"
+                className={`btn ${activeWishlistItemId ? 'btn-danger' : 'btn-outline-danger'} rounded-pill w-100 mt-3 fw-semibold`}
+                onClick={handleWishlist}
+                disabled={isUpdatingWishlist}
+                aria-pressed={Boolean(activeWishlistItemId)}
+              >
+                {activeWishlistItemId ? <FaHeart className="me-2" /> : <FaRegHeart className="me-2" />}
+                {isUpdatingWishlist
+                  ? 'Updating wishlist...'
+                  : activeWishlistItemId
+                    ? 'Saved to Wishlist'
+                    : 'Add to Wishlist'}
+              </button>
             </div>
           </div>
         </div>

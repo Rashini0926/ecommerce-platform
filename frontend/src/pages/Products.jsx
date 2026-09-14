@@ -1,7 +1,7 @@
 import "./Products.css";
 
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   FaSearch,
@@ -18,6 +18,13 @@ import {
 
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import {
+  addToWishlist,
+  getWishlist,
+  removeFromWishlist,
+} from "../services/customerService";
 import { API_BASE_URL } from "../utils/api";
 
 function Products() {
@@ -27,6 +34,11 @@ function Products() {
     searchParams.get("search") || "";
 
   const API_URL = API_BASE_URL;
+  const navigate = useNavigate();
+  const { token, user } = useAuth();
+  const { showToast } = useToast();
+  const userRole = user?.role;
+  const userId = user?.id;
 
   /*
   ==========================================================
@@ -102,6 +114,14 @@ function Products() {
     wishlistState,
     setWishlistState,
   ] = useState({});
+
+  const [
+    wishlistProcessingId,
+    setWishlistProcessingId,
+  ] = useState(null);
+
+  const [wishlistOwnerId, setWishlistOwnerId] =
+    useState(null);
 
   /*
   ==========================================================
@@ -331,6 +351,40 @@ function Products() {
     return () => { cancelled = true; };
   }, [API_URL, initialSearch]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token || userRole !== "customer") {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    getWishlist(token)
+      .then((response) => {
+        if (cancelled) return;
+
+        const savedProducts = Object.fromEntries(
+          (response.items || []).map((item) => [
+            item.product_id,
+            item.id,
+          ])
+        );
+
+        setWishlistState(savedProducts);
+        setWishlistOwnerId(userId);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Wishlist loading error:", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, userId, userRole]);
+
   /*
   ==========================================================
   GET SUBCATEGORIES FOR SELECTED CATEGORY
@@ -464,17 +518,53 @@ function Products() {
   ==========================================================
   */
 
-  const toggleWishlist = (
+  const toggleWishlist = async (
     productId
   ) => {
-    setWishlistState(
-      (previous) => ({
-        ...previous,
+    if (!token) {
+      showToast("Please log in to save products to your wishlist.", "info");
+      navigate("/login");
+      return;
+    }
 
-        [productId]:
-          !previous[productId],
-      })
-    );
+    if (userRole !== "customer") {
+      showToast("Only customer accounts can use the wishlist.", "warning");
+      return;
+    }
+
+    if (wishlistProcessingId === productId) return;
+
+    const wishlistItemId = wishlistOwnerId === userId
+      ? wishlistState[productId]
+      : null;
+    setWishlistProcessingId(productId);
+
+    try {
+      if (wishlistItemId) {
+        await removeFromWishlist(token, wishlistItemId);
+        setWishlistState((previous) => {
+          const nextState = { ...previous };
+          delete nextState[productId];
+          return nextState;
+        });
+        showToast("Product removed from wishlist.", "info");
+      } else {
+        const response = await addToWishlist(token, productId);
+        setWishlistState((previous) => ({
+          ...previous,
+          [productId]: response.item.id,
+        }));
+        setWishlistOwnerId(userId);
+        showToast("Product added to wishlist.", "success");
+      }
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || "Unable to update your wishlist.",
+        "danger"
+      );
+    } finally {
+      setWishlistProcessingId(null);
+    }
   };
 
   /*
@@ -1226,9 +1316,13 @@ function Products() {
 
                               <button
                                 type="button"
-                                aria-label="Add to wishlist"
+                                aria-label={
+                                  wishlistOwnerId === userId && wishlistState[product.id]
+                                    ? "Remove from wishlist"
+                                    : "Add to wishlist"
+                                }
                                 className={`wishlist-button ${
-                                  wishlistState[
+                                  wishlistOwnerId === userId && wishlistState[
                                     product.id
                                   ]
                                     ? "wishlist-active"
@@ -1239,6 +1333,7 @@ function Products() {
                                     product.id
                                   )
                                 }
+                                disabled={wishlistProcessingId === product.id}
                               >
 
                                 <FaHeart />

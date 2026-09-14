@@ -11,6 +11,8 @@ class WishlistController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $this->ensureCustomer($request);
+
         $items = WishlistItem::with(['product.category', 'product.subcategory'])
             ->where('user_id', $request->user()->id)
             ->latest()
@@ -24,8 +26,10 @@ class WishlistController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->ensureCustomer($request);
+
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'integer', 'exists:products,id'],
         ]);
 
         $item = WishlistItem::firstOrCreate([
@@ -37,13 +41,17 @@ class WishlistController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product added to wishlist.',
+            'message' => $item->wasRecentlyCreated
+                ? 'Product added to wishlist.'
+                : 'Product is already in your wishlist.',
             'item' => $item,
-        ], 201);
+        ], $item->wasRecentlyCreated ? 201 : 200);
     }
 
     public function destroy(Request $request, WishlistItem $wishlistItem): JsonResponse
     {
+        $this->ensureCustomer($request);
+
         if ($wishlistItem->user_id !== $request->user()->id) {
             abort(403, 'You are not allowed to remove this wishlist item.');
         }
@@ -54,5 +62,10 @@ class WishlistController extends Controller
             'success' => true,
             'message' => 'Product removed from wishlist.',
         ]);
+    }
+
+    private function ensureCustomer(Request $request): void
+    {
+        abort_unless($request->user()->role === 'CUSTOMER', 403, 'Only customer accounts can use the wishlist.');
     }
 }
