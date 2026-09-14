@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Models\Subcategory;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
@@ -14,7 +15,7 @@ class ProductController extends Controller
         $query = Product::with(['category', 'subcategory', 'seller:id,full_name']);
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('category_id')) {
@@ -50,6 +51,43 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
+    public function homepage(): JsonResponse
+    {
+        $catalogue = Product::query()
+            ->with(['category', 'subcategory', 'seller:id,full_name'])
+            ->where('stock', '>', 0);
+
+        $featuredProducts = (clone $catalogue)
+            ->orderByDesc('rating')
+            ->latest()
+            ->limit(4)
+            ->get();
+
+        $flashDeals = (clone $catalogue)
+            ->where('discount_percentage', '>', 0)
+            ->orderByDesc('discount_percentage')
+            ->limit(4)
+            ->get();
+
+        $bestSellers = (clone $catalogue)
+            ->withSum([
+                'orderItems as units_sold' => fn ($query) => $query->whereHas(
+                    'order',
+                    fn ($orderQuery) => $orderQuery->where('order_status', '!=', 'CANCELLED')
+                ),
+            ], 'quantity')
+            ->orderByDesc('units_sold')
+            ->orderByDesc('rating')
+            ->limit(4)
+            ->get();
+
+        return response()->json([
+            'featured_products' => $featuredProducts,
+            'flash_deals' => $flashDeals,
+            'best_sellers' => $bestSellers,
+        ]);
+    }
+
     public function show(Product $product): JsonResponse
     {
         $product->load(['category', 'subcategory', 'seller:id,full_name']);
@@ -66,6 +104,7 @@ class ProductController extends Controller
     {
         $this->ensureSeller($request);
         $product = $request->user()->products()->create($this->validatedData($request));
+
         return response()->json($product->load(['category', 'subcategory']), 201);
     }
 
@@ -73,6 +112,7 @@ class ProductController extends Controller
     {
         $this->ensureOwner($request, $product);
         $product->update($this->validatedData($request));
+
         return response()->json($product->load(['category', 'subcategory']));
     }
 
@@ -80,6 +120,7 @@ class ProductController extends Controller
     {
         $this->ensureOwner($request, $product);
         $product->delete();
+
         return response()->json(['message' => 'Product deleted successfully.']);
     }
 
@@ -90,15 +131,16 @@ class ProductController extends Controller
             'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
             'name' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'], 'brand' => ['nullable', 'string', 'max:255'],
+            'discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:90'],
             'color' => ['nullable', 'string', 'max:255'], 'size' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'url', 'max:2048'], 'stock' => ['required', 'integer', 'min:0'],
         ]);
 
-        if (!empty($data['subcategory_id'])) {
-            $belongsToCategory = \App\Models\Subcategory::whereKey($data['subcategory_id'])
+        if (! empty($data['subcategory_id'])) {
+            $belongsToCategory = Subcategory::whereKey($data['subcategory_id'])
                 ->where('category_id', $data['category_id'])->exists();
 
-            if (!$belongsToCategory) {
+            if (! $belongsToCategory) {
                 throw ValidationException::withMessages(['subcategory_id' => 'The subcategory must belong to the selected category.']);
             }
         }

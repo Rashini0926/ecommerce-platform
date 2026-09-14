@@ -16,6 +16,7 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'discount_percentage',
         'brand',
         'color',
         'size',
@@ -23,6 +24,27 @@ class Product extends Model
         'image',
         'stock',
     ];
+
+    protected $appends = [
+        'sale_price',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'price' => 'decimal:2',
+            'discount_percentage' => 'decimal:2',
+            'rating' => 'decimal:1',
+            'stock' => 'integer',
+        ];
+    }
+
+    public function getSalePriceAttribute(): float
+    {
+        $discountMultiplier = 1 - ((float) $this->discount_percentage / 100);
+
+        return round((float) $this->price * $discountMultiplier, 2);
+    }
 
     public function category()
     {

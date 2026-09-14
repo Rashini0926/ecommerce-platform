@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\Api\WishlistController;
-use App\Http\Controllers\Api\OrderController;
-use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\DemoPaymentController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\SellerOrderController;
+use App\Http\Controllers\Api\WishlistController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/categories', [CategoryController::class, 'index']);
 
+Route::get('/homepage/products', [ProductController::class, 'homepage']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/products/{product}/reviews', [ProductReviewController::class, 'index']);

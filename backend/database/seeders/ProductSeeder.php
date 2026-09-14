@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Subcategory;
 use Illuminate\Database\Seeder;
 
@@ -24,6 +24,7 @@ class ProductSeeder extends Seeder
                 'name' => 'Galaxy S23 Ultra',
                 'description' => 'Flagship smartphone with 200MP camera and S Pen support.',
                 'price' => 1199.99,
+                'discount_percentage' => 10,
                 'brand' => 'Samsung',
                 'color' => 'Black',
                 'size' => null,
@@ -37,6 +38,7 @@ class ProductSeeder extends Seeder
                 'name' => 'iPhone 15 Pro',
                 'description' => 'Titanium design with A17 Pro chip and Pro camera system.',
                 'price' => 1299.00,
+                'discount_percentage' => 0,
                 'brand' => 'Apple',
                 'color' => 'Titanium Blue',
                 'size' => null,
@@ -50,6 +52,7 @@ class ProductSeeder extends Seeder
                 'name' => 'MacBook Air M2',
                 'description' => 'Ultra-thin laptop with M2 chip, all-day battery life.',
                 'price' => 1099.00,
+                'discount_percentage' => 12,
                 'brand' => 'Apple',
                 'color' => 'Silver',
                 'size' => '13-inch',
@@ -63,6 +66,7 @@ class ProductSeeder extends Seeder
                 'name' => 'Classic Denim Jacket',
                 'description' => 'Timeless denim jacket, comfortable regular fit.',
                 'price' => 59.99,
+                'discount_percentage' => 20,
                 'brand' => 'Levi\'s',
                 'color' => 'Blue',
                 'size' => 'M',

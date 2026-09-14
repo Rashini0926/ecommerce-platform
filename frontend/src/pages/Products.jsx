@@ -1315,15 +1315,14 @@ function Products() {
 
                                 <div className="product-price">
 
-                                  <span>
-                                    $
-                                  </span>
+                                  <span>Rs. </span>
 
                                   {Number(
-                                    product.price
-                                  ).toFixed(
-                                    2
-                                  )}
+                                    product.sale_price ?? product.price
+                                  ).toLocaleString("en-LK", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
 
                                 </div>
 

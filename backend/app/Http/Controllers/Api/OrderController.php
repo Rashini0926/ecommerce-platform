@@ -53,12 +53,13 @@ class OrderController extends Controller
                     ]);
                 }
 
-                $subtotal = $product->price * $cartItem->quantity;
+                $unitPrice = $product->sale_price;
+                $subtotal = $unitPrice * $cartItem->quantity;
                 $totalAmount += $subtotal;
                 $orderItems[] = [
                     'product_id' => $product->id,
                     'product_name' => $product->name,
-                    'unit_price' => $product->price,
+                    'unit_price' => $unitPrice,
                     'quantity' => $cartItem->quantity,
                     'subtotal' => $subtotal,
                 ];

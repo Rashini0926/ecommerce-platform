@@ -51,6 +51,21 @@ class OrderCheckoutTest extends TestCase
         ])->assertCreated()->assertJsonPath('order.payment_status', 'PENDING');
     }
 
+    public function test_checkout_uses_the_discounted_product_price(): void
+    {
+        [$customer, $product] = $this->createCheckoutData();
+        $product->update(['discount_percentage' => 20]);
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/orders', [
+            'shipping_address' => 'Kasun Perera, 0771234567, 10 Main Street, Colombo',
+            'payment_method' => 'COD',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('orders', ['user_id' => $customer->id, 'total_amount' => 6000]);
+        $this->assertDatabaseHas('order_items', ['product_id' => $product->id, 'unit_price' => 2000, 'subtotal' => 6000]);
+    }
+
     private function createCheckoutData(): array
     {
         $customer = User::create([

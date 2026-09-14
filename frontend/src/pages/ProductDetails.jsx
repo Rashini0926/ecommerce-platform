@@ -241,8 +241,9 @@ function ProductDetails() {
 
               <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
                 <span style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb' }}>
-                  ${product.price}
+                  Rs. {Number(product.sale_price ?? product.price).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
+                {Number(product.discount_percentage) > 0 && <span className="text-muted text-decoration-line-through">Rs. {Number(product.price).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
                 <span
                   style={{
                     fontSize: '13.5px',
