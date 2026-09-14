@@ -19,25 +19,6 @@ import {
 
 import "./Cart.css";
 
-/*
-|--------------------------------------------------------------------------
-| CART SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-const FREE_SHIPPING_THRESHOLD = 100;
-const STANDARD_SHIPPING_FEE = 10;
-
-/*
-|--------------------------------------------------------------------------
-| PRICE FORMATTER
-|--------------------------------------------------------------------------
-*/
-
-const formatPrice = (amount) => {
-  return `Rs. ${Number(amount || 0).toFixed(2)}`;
-};
-
 function Cart() {
   const navigate = useNavigate();
 
@@ -48,9 +29,13 @@ function Cart() {
   */
 
   const [cartItems, setCartItems] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
+
   const [message, setMessage] = useState("");
+
   const [updatingId, setUpdatingId] = useState(null);
 
   /*
@@ -62,9 +47,19 @@ function Cart() {
   const loadCart = async () => {
     try {
       setLoading(true);
+
       setError("");
 
       const data = await getCart();
+
+      /*
+       * Backend response:
+       *
+       * {
+       *   success: true,
+       *   items: [...]
+       * }
+       */
 
       const items =
         data?.items ||
@@ -73,19 +68,32 @@ function Cart() {
         (Array.isArray(data) ? data : []);
 
       setCartItems(items);
+
     } catch (err) {
-      console.error("Cart loading error:", err);
+
+      console.error(
+        "Cart loading error:",
+        err
+      );
 
       if (err.response?.status === 401) {
-        setError("Please login to view your cart.");
+
+        setError(
+          "Please login to view your cart."
+        );
+
       } else {
+
         setError(
           err.response?.data?.message ||
             "Unable to load your cart."
         );
       }
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
@@ -101,7 +109,7 @@ function Cart() {
 
   /*
   |--------------------------------------------------------------------------
-  | GET PRODUCT
+  | GET PRODUCT FROM CART ITEM
   |--------------------------------------------------------------------------
   */
 
@@ -111,16 +119,24 @@ function Cart() {
 
   /*
   |--------------------------------------------------------------------------
-  | PRODUCT IMAGE
+  | PRODUCT IMAGE URL
   |--------------------------------------------------------------------------
   */
 
   const getImageUrl = (product) => {
+
     if (!product?.image) {
       return "/images/products/placeholder.svg";
     }
 
-    const image = String(product.image).trim();
+    const image =
+      String(product.image).trim();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Full URL
+    |--------------------------------------------------------------------------
+    */
 
     if (
       image.startsWith("http://") ||
@@ -129,21 +145,56 @@ function Cart() {
       return image;
     }
 
-    if (image.startsWith("storage/")) {
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel storage image
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      image.startsWith("storage/")
+    ) {
       return `http://127.0.0.1:8000/${image}`;
     }
 
-    if (image.startsWith("/storage/")) {
+    if (
+      image.startsWith("/storage/")
+    ) {
       return `http://127.0.0.1:8000${image}`;
     }
 
-    if (image.startsWith("images/products/")) {
+    /*
+    |--------------------------------------------------------------------------
+    | Already contains frontend path
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      image.startsWith(
+        "images/products/"
+      )
+    ) {
       return `/${image}`;
     }
 
-    if (image.startsWith("/images/products/")) {
+    if (
+      image.startsWith(
+        "/images/products/"
+      )
+    ) {
       return image;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Only filename
+    |--------------------------------------------------------------------------
+    |
+    | Example:
+    |
+    | samsungS23.jpg
+    |
+    */
 
     return `/images/products/${image}`;
   };
@@ -152,12 +203,17 @@ function Cart() {
   |--------------------------------------------------------------------------
   | NOTIFY NAVBAR
   |--------------------------------------------------------------------------
+  |
+  | Navbar listens for this event.
+  |
   */
 
   const notifyCartUpdated = () => {
+
     window.dispatchEvent(
       new Event("cartUpdated")
     );
+
   };
 
   /*
@@ -166,174 +222,298 @@ function Cart() {
   |--------------------------------------------------------------------------
   */
 
-  const handleQuantityChange = async (
-    item,
-    newQuantity
-  ) => {
-    if (newQuantity < 1) {
-      return;
-    }
+  const handleQuantityChange =
+    async (
+      item,
+      newQuantity
+    ) => {
 
-    const product = getProduct(item);
+      /*
+       * Minimum quantity = 1
+       */
 
-    /*
-    |--------------------------------------------------------------------------
-    | STOCK VALIDATION
-    |--------------------------------------------------------------------------
-    */
+      if (newQuantity < 1) {
+        return;
+      }
 
-    if (
-      product.stock !== undefined &&
-      newQuantity > Number(product.stock)
-    ) {
-      setError(
-        `Only ${product.stock} item(s) available in stock.`
-      );
+      const product =
+        getProduct(item);
 
-      return;
-    }
+      /*
+      |--------------------------------------------------------------------------
+      | Stock Validation
+      |--------------------------------------------------------------------------
+      */
 
-    try {
-      setUpdatingId(item.id);
-      setError("");
-      setMessage("");
+      if (
+        product.stock !==
+          undefined &&
+        newQuantity >
+          Number(
+            product.stock
+          )
+      ) {
 
-      await updateCartItem(
-        item.id,
-        newQuantity
-      );
+        setError(
+          `Only ${product.stock} item(s) available in stock.`
+        );
 
-      setCartItems((previousItems) =>
-        previousItems.map((cartItem) =>
-          cartItem.id === item.id
-            ? {
-                ...cartItem,
-                quantity: newQuantity,
-              }
-            : cartItem
-        )
-      );
+        return;
+      }
 
-      notifyCartUpdated();
-    } catch (err) {
-      console.error(
-        "Quantity update error:",
-        err
-      );
+      try {
 
-      setError(
-        err.response?.data?.message ||
-          "Unable to update quantity."
-      );
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+        setUpdatingId(
+          item.id
+        );
 
-  /*
-  |--------------------------------------------------------------------------
-  | REMOVE CART ITEM
-  |--------------------------------------------------------------------------
-  */
+        setError("");
 
-  const handleRemove = async (itemId) => {
-    const confirmed = window.confirm(
-      "Remove this product from your cart?"
-    );
+        setMessage("");
 
-    if (!confirmed) {
-      return;
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | PATCH /api/cart/{id}
+        |--------------------------------------------------------------------------
+        */
 
-    try {
-      setUpdatingId(itemId);
-      setError("");
-      setMessage("");
+        await updateCartItem(
+          item.id,
+          newQuantity
+        );
 
-      await removeCartItem(itemId);
+        /*
+        |--------------------------------------------------------------------------
+        | Update Local Cart State
+        |--------------------------------------------------------------------------
+        */
 
-      setCartItems((previousItems) =>
-        previousItems.filter(
-          (item) =>
-            item.id !== itemId
-        )
-      );
+        setCartItems(
+          (previousItems) =>
+            previousItems.map(
+              (cartItem) =>
+                cartItem.id ===
+                item.id
+                  ? {
+                      ...cartItem,
+                      quantity:
+                        newQuantity,
+                    }
+                  : cartItem
+            )
+        );
 
-      notifyCartUpdated();
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Cart Badge
+        |--------------------------------------------------------------------------
+        */
 
-      setMessage(
-        "Product removed from cart."
-      );
-    } catch (err) {
-      console.error(
-        "Remove cart item error:",
-        err
-      );
+        notifyCartUpdated();
 
-      setError(
-        err.response?.data?.message ||
-          "Unable to remove product."
-      );
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+      } catch (err) {
+
+        console.error(
+          "Quantity update error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to update quantity."
+        );
+
+      } finally {
+
+        setUpdatingId(null);
+
+      }
+    };
 
   /*
   |--------------------------------------------------------------------------
-  | CLEAR CART
+  | REMOVE ONE PRODUCT
   |--------------------------------------------------------------------------
   */
 
-  const handleClearCart = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to clear your cart?"
-    );
+  const handleRemove =
+    async (itemId) => {
 
-    if (!confirmed) {
-      return;
-    }
+      const confirmed =
+        window.confirm(
+          "Remove this product from your cart?"
+        );
 
-    try {
-      setLoading(true);
-      setError("");
-      setMessage("");
+      if (!confirmed) {
+        return;
+      }
 
-      await clearCart();
+      try {
 
-      setCartItems([]);
+        setUpdatingId(
+          itemId
+        );
 
-      notifyCartUpdated();
+        setError("");
 
-      setMessage(
-        "Cart cleared successfully."
-      );
-    } catch (err) {
-      console.error(
-        "Clear cart error:",
-        err
-      );
+        setMessage("");
 
-      setError(
-        err.response?.data?.message ||
-          "Unable to clear cart."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE /api/cart/{id}
+        |--------------------------------------------------------------------------
+        */
+
+        await removeCartItem(
+          itemId
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Remove From Local State
+        |--------------------------------------------------------------------------
+        */
+
+        setCartItems(
+          (previousItems) =>
+            previousItems.filter(
+              (item) =>
+                item.id !==
+                itemId
+            )
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Badge
+        |--------------------------------------------------------------------------
+        */
+
+        notifyCartUpdated();
+
+        setMessage(
+          "Product removed from cart."
+        );
+
+      } catch (err) {
+
+        console.error(
+          "Remove cart item error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to remove product."
+        );
+
+      } finally {
+
+        setUpdatingId(null);
+
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | CLEAR COMPLETE CART
+  |--------------------------------------------------------------------------
+  */
+
+  const handleClearCart =
+    async () => {
+
+      const confirmed =
+        window.confirm(
+          "Are you sure you want to clear your cart?"
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+
+        setLoading(true);
+
+        setError("");
+
+        setMessage("");
+
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE /api/cart
+        |--------------------------------------------------------------------------
+        */
+
+        await clearCart();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Local State
+        |--------------------------------------------------------------------------
+        */
+
+        setCartItems([]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Navbar Badge
+        |--------------------------------------------------------------------------
+        */
+
+        notifyCartUpdated();
+
+        setMessage(
+          "Cart cleared successfully."
+        );
+
+      } catch (err) {
+
+        console.error(
+          "Clear cart error:",
+          err
+        );
+
+        setError(
+          err.response?.data
+            ?.message ||
+            "Unable to clear cart."
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
 
   /*
   |--------------------------------------------------------------------------
   | TOTAL ITEM QUANTITY
   |--------------------------------------------------------------------------
+  |
+  | Example:
+  |
+  | Product A quantity = 2
+  | Product B quantity = 3
+  |
+  | totalItemCount = 5
+  |
   */
 
   const totalItemCount =
     cartItems.reduce(
-      (total, item) =>
+      (
+        total,
+        item
+      ) =>
         total +
-        Number(item.quantity || 0),
+        Number(
+          item.quantity || 0
+        ),
       0
     );
 
@@ -345,24 +525,31 @@ function Cart() {
 
   const subtotal =
     cartItems.reduce(
-      (total, item) => {
+      (
+        total,
+        item
+      ) => {
+
         const product =
           getProduct(item);
 
         const price =
           Number(
-            product.price || 0
+            product.price ||
+              0
           );
 
         const quantity =
           Number(
-            item.quantity || 1
+            item.quantity ||
+              1
           );
 
         return (
           total +
           price * quantity
         );
+
       },
       0
     );
@@ -372,34 +559,19 @@ function Cart() {
   | SHIPPING
   |--------------------------------------------------------------------------
   |
-  | Less than Rs. 100
-  |     → Rs. 10 shipping
+  | subtotal >= 100
+  |     FREE
   |
-  | Rs. 100 or more
-  |     → FREE shipping
+  | subtotal < 100
+  |     $10
   |
   */
 
   const shipping =
     subtotal > 0
-      ? subtotal >=
-        FREE_SHIPPING_THRESHOLD
+      ? subtotal >= 100
         ? 0
-        : STANDARD_SHIPPING_FEE
-      : 0;
-
-  /*
-  |--------------------------------------------------------------------------
-  | AMOUNT NEEDED FOR FREE SHIPPING
-  |--------------------------------------------------------------------------
-  */
-
-  const amountForFreeShipping =
-    subtotal > 0 &&
-    subtotal <
-      FREE_SHIPPING_THRESHOLD
-      ? FREE_SHIPPING_THRESHOLD -
-        subtotal
+        : 10
       : 0;
 
   /*
@@ -409,7 +581,8 @@ function Cart() {
   */
 
   const total =
-    subtotal + shipping;
+    subtotal +
+    shipping;
 
   /*
   |--------------------------------------------------------------------------
@@ -418,18 +591,27 @@ function Cart() {
   */
 
   if (loading) {
+
     return (
+
       <main className="cart-page">
+
         <div className="cart-container">
+
           <div className="cart-loading">
+
             <div className="cart-loader"></div>
 
             <p>
               Loading your cart...
             </p>
+
           </div>
+
         </div>
+
       </main>
+
     );
   }
 
@@ -440,7 +622,9 @@ function Cart() {
   */
 
   return (
+
     <main className="cart-page">
+
       <div className="cart-container">
 
         {/* ================================================================
@@ -448,43 +632,63 @@ function Cart() {
         ================================================================ */}
 
         <div className="cart-heading">
+
           <div>
+
             <span className="cart-eyebrow">
               REVIEW YOUR ORDER
             </span>
 
             <h1>
+
               <FaShoppingCart />
+
               Shopping Cart
+
             </h1>
+
           </div>
 
+          {/* TOTAL QUANTITY */}
+
           <span className="cart-count">
+
             {totalItemCount}{" "}
+
             {totalItemCount === 1
               ? "item"
               : "items"}
+
           </span>
+
         </div>
 
         {/* ================================================================
-            ERROR MESSAGE
+            ERROR
         ================================================================ */}
 
         {error && (
+
           <div className="cart-alert cart-error">
+
             {error}
+
           </div>
+
         )}
 
         {/* ================================================================
-            SUCCESS MESSAGE
+            SUCCESS
         ================================================================ */}
 
         {message && (
+
           <div className="cart-alert cart-success">
+
             {message}
+
           </div>
+
         )}
 
         {/* ================================================================
@@ -492,9 +696,13 @@ function Cart() {
         ================================================================ */}
 
         {cartItems.length === 0 ? (
+
           <div className="empty-cart">
+
             <div className="empty-cart-icon">
+
               <FaBoxOpen />
+
             </div>
 
             <h2>
@@ -511,20 +719,31 @@ function Cart() {
               to="/products"
               className="continue-shopping-btn"
             >
+
               <FaArrowLeft />
+
               Browse Products
+
             </Link>
+
           </div>
+
         ) : (
+
+          /* ==============================================================
+             CART HAS ITEMS
+          ============================================================== */
+
           <div className="cart-layout">
 
             {/* ============================================================
-                CART PRODUCTS
+                LEFT SIDE
             ============================================================ */}
 
             <section className="cart-items-section">
 
               <div className="cart-items-header">
+
                 <h2>
                   Your Products
                 </h2>
@@ -536,130 +755,202 @@ function Cart() {
                     handleClearCart
                   }
                 >
+
                   <FaTrash />
+
                   Clear Cart
+
                 </button>
+
               </div>
+
+              {/* ==========================================================
+                  CART PRODUCTS
+              ========================================================== */}
 
               <div className="cart-items-list">
 
                 {cartItems.map(
                   (item) => {
-                    const product =
-                      getProduct(item);
 
-                    const itemTotal =
-                      Number(
-                        product.price ||
-                          0
-                      ) *
-                      Number(
-                        item.quantity ||
-                          1
+                    const product =
+                      getProduct(
+                        item
                       );
 
                     return (
+
                       <article
                         className="cart-item-card"
-                        key={item.id}
+                        key={
+                          item.id
+                        }
                       >
 
-                        {/* IMAGE */}
+                        {/* ==================================================
+                            IMAGE
+                        ================================================== */}
 
                         <Link
                           to={`/products/${product.id}`}
                           className="cart-product-image"
                         >
+
                           <img
                             src={
                               getImageUrl(
                                 product
                               )
                             }
+
                             alt={
                               product.name ||
                               "Product"
                             }
-                            onError={(e) => {
+
+                            onError={(
+                              e
+                            ) => {
+
+                              /*
+                               * Prevent infinite
+                               * image fallback loop
+                               */
+
                               e.currentTarget.onerror =
                                 null;
 
                               e.currentTarget.src =
                                 "/images/products/placeholder.svg";
+
                             }}
                           />
+
                         </Link>
 
-                        {/* PRODUCT INFO */}
+                        {/* ==================================================
+                            PRODUCT INFO
+                        ================================================== */}
 
                         <div className="cart-product-info">
 
+                          {/* BRAND */}
+
                           <span className="cart-product-brand">
+
                             {product.brand ||
                               "ShopEase"}
+
                           </span>
+
+                          {/* PRODUCT NAME */}
 
                           <Link
                             to={`/products/${product.id}`}
                             className="cart-product-name"
                           >
+
                             {product.name ||
                               "Product"}
+
                           </Link>
+
+                          {/* PRODUCT META */}
 
                           <div className="cart-product-meta">
 
                             {product.color && (
+
                               <span>
+
                                 Color:{" "}
-                                {product.color}
+
+                                {
+                                  product.color
+                                }
+
                               </span>
+
                             )}
 
                             {product.size && (
+
                               <span>
+
                                 Size:{" "}
-                                {product.size}
+
+                                {
+                                  product.size
+                                }
+
                               </span>
+
                             )}
 
                           </div>
 
+                          {/* STOCK */}
+
                           <span className="cart-stock">
+
                             {product.stock ??
                               0}{" "}
+
                             available
+
                           </span>
 
                           {/* MOBILE PRICE */}
 
                           <div className="cart-mobile-price">
-                            {formatPrice(
-                              product.price
+
+                            $
+
+                            {Number(
+                              product.price ||
+                                0
+                            ).toFixed(
+                              2
                             )}
+
                           </div>
 
                         </div>
 
-                        {/* CART ACTIONS */}
+                        {/* ==================================================
+                            CART ITEM ACTIONS
+                        ================================================== */}
 
                         <div className="cart-item-actions">
 
-                          {/* PRODUCT PRICE */}
+                          {/* PRICE */}
 
                           <div className="cart-price">
-                            {formatPrice(
-                              product.price
+
+                            $
+
+                            {Number(
+                              product.price ||
+                                0
+                            ).toFixed(
+                              2
                             )}
+
                           </div>
 
-                          {/* QUANTITY */}
+                          {/* =================================================
+                              QUANTITY CONTROLLER
+                          ================================================= */}
 
                           <div className="quantity-control">
 
+                            {/* MINUS */}
+
                             <button
                               type="button"
+
                               aria-label="Decrease quantity"
+
                               onClick={() =>
                                 handleQuantityChange(
                                   item,
@@ -668,6 +959,7 @@ function Cart() {
                                   ) - 1
                                 )
                               }
+
                               disabled={
                                 Number(
                                   item.quantity
@@ -676,16 +968,28 @@ function Cart() {
                                   item.id
                               }
                             >
+
                               <FaMinus />
+
                             </button>
 
+                            {/* CURRENT QUANTITY */}
+
                             <span>
-                              {item.quantity}
+
+                              {
+                                item.quantity
+                              }
+
                             </span>
+
+                            {/* PLUS */}
 
                             <button
                               type="button"
+
                               aria-label="Increase quantity"
+
                               onClick={() =>
                                 handleQuantityChange(
                                   item,
@@ -694,6 +998,7 @@ function Cart() {
                                   ) + 1
                                 )
                               }
+
                               disabled={
                                 updatingId ===
                                   item.id ||
@@ -705,66 +1010,94 @@ function Cart() {
                                   )
                               }
                             >
+
                               <FaPlus />
+
                             </button>
 
                           </div>
 
-                          {/* ITEM TOTAL */}
+                          {/* =================================================
+                              LINE TOTAL
+                          ================================================= */}
 
                           <div className="cart-line-total">
-                            Item total:{" "}
-                            {formatPrice(
-                              itemTotal
+
+                            Item total: $
+
+                            {(
+                              Number(
+                                product.price ||
+                                  0
+                              ) *
+                              Number(
+                                item.quantity ||
+                                  1
+                              )
+                            ).toFixed(
+                              2
                             )}
+
                           </div>
 
-                          {/* REMOVE */}
+                          {/* =================================================
+                              REMOVE
+                          ================================================= */}
 
                           <button
                             type="button"
                             className="remove-item-btn"
+
                             onClick={() =>
                               handleRemove(
                                 item.id
                               )
                             }
+
                             disabled={
                               updatingId ===
                               item.id
                             }
                           >
+
                             <FaTrash />
 
                             {updatingId ===
                             item.id
                               ? "Updating..."
                               : "Remove"}
+
                           </button>
 
                         </div>
 
                       </article>
+
                     );
                   }
                 )}
 
               </div>
 
-              {/* CONTINUE SHOPPING */}
+              {/* ==========================================================
+                  CONTINUE SHOPPING
+              ========================================================== */}
 
               <Link
                 to="/products"
                 className="back-shopping-link"
               >
+
                 <FaArrowLeft />
+
                 Continue Shopping
+
               </Link>
 
             </section>
 
             {/* ============================================================
-                ORDER SUMMARY
+                RIGHT SIDE - ORDER SUMMARY
             ============================================================ */}
 
             <aside className="order-summary">
@@ -776,98 +1109,133 @@ function Cart() {
               {/* SUBTOTAL */}
 
               <div className="summary-row">
+
                 <span>
                   Subtotal
                 </span>
 
                 <strong>
-                  {formatPrice(
-                    subtotal
+
+                  $
+
+                  {subtotal.toFixed(
+                    2
                   )}
+
                 </strong>
+
               </div>
 
               {/* SHIPPING */}
 
               <div className="summary-row">
+
                 <span>
                   Shipping
                 </span>
 
-                <strong
-                  className={
-                    shipping === 0
-                      ? "text-success"
-                      : ""
-                  }
-                >
+                <strong>
+
                   {shipping === 0
                     ? "FREE"
-                    : formatPrice(
-                        shipping
-                      )}
+                    : `$${shipping.toFixed(
+                        2
+                      )}`}
+
                 </strong>
+
               </div>
 
-              {/* FREE SHIPPING MESSAGE */}
+              {/* ==========================================================
+                  FREE SHIPPING MESSAGE
+              ========================================================== */}
 
-              {amountForFreeShipping >
-                0 && (
-                <div className="free-shipping-note">
-                  Spend{" "}
-                  {formatPrice(
-                    amountForFreeShipping
-                  )}{" "}
-                  more for free
-                  shipping.
-                </div>
-              )}
+              {subtotal > 0 &&
+                subtotal < 100 && (
+
+                  <div className="free-shipping-note">
+
+                    Spend $
+
+                    {(
+                      100 -
+                      subtotal
+                    ).toFixed(
+                      2
+                    )}{" "}
+
+                    more for free
+                    shipping.
+
+                  </div>
+
+                )}
 
               <div className="summary-divider"></div>
 
-              {/* TOTAL */}
+              {/* ==========================================================
+                  TOTAL
+              ========================================================== */}
 
               <div className="summary-total">
+
                 <span>
                   Total
                 </span>
 
                 <strong>
-                  {formatPrice(
-                    total
+
+                  $
+
+                  {total.toFixed(
+                    2
                   )}
+
                 </strong>
+
               </div>
 
-              {/* CHECKOUT */}
+              {/* ==========================================================
+                  CHECKOUT
+              ========================================================== */}
 
               <button
                 type="button"
                 className="checkout-btn"
+
                 onClick={() =>
                   navigate(
                     "/checkout"
                   )
                 }
+
                 disabled={
                   cartItems.length ===
                   0
                 }
               >
+
                 Proceed to Checkout
+
               </button>
 
               <p className="secure-checkout">
+
                 Secure checkout powered
                 by ShopEase
+
               </p>
 
             </aside>
 
           </div>
+
         )}
+
       </div>
+
     </main>
+
   );
 }
 

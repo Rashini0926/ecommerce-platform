@@ -1,31 +1,35 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
+  useParams,
   Link,
   useNavigate,
-  useParams,
 } from "react-router-dom";
 
 import ReviewSection from "../components/ReviewSection";
-import { useAuth } from "../context/AuthContext";
 import { addToCart } from "../services/cartService";
-import { getProduct } from "../services/productService";
-
+import { useAuth } from "../context/AuthContext";
 
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   /*
   |--------------------------------------------------------------------------
-  | STATES
+  | Product States
   |--------------------------------------------------------------------------
   */
 
   const [product, setProduct] = useState(null);
 
   const [loading, setLoading] = useState(true);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Cart States
+  |--------------------------------------------------------------------------
+  */
 
   const [quantity, setQuantity] = useState(1);
 
@@ -43,89 +47,284 @@ function ProductDetails() {
 
   /*
   |--------------------------------------------------------------------------
-  | PLACEHOLDER IMAGE
-  |--------------------------------------------------------------------------
-  */
-
-  const placeholderImage =
-    `${
-      import.meta.env.BASE_URL
-    }images/products/placeholder.svg`;
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD PRODUCT
+  | Load Product
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    const loadProduct = async () => {
-      try {
-        setLoading(true);
+    setLoading(true);
 
-        setProduct(null);
+    setCartMessage("");
 
-        setCartMessage("");
+    setCartError("");
 
-        setCartError("");
+    setAdded(false);
 
-        setAdded(false);
+    fetch(
+      `http://127.0.0.1:8000/api/products/${id}`
+    )
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(
+            "Product request failed."
+          );
+        }
+
+        return res.json();
+      })
+
+      .then((data) => {
+        setProduct(data);
 
         setQuantity(1);
 
-        /*
-         * Use existing
-         * productService.js
-         */
-        const data =
-          await getProduct(id);
+        setLoading(false);
+      })
 
-        /*
-         * Support:
-         *
-         * direct product object
-         *
-         * OR
-         *
-         * { product: {...} }
-         */
-        const productData =
-          data?.product ||
-          data;
-
-        setProduct(
-          productData
-        );
-
-      } catch (error) {
-
+      .catch((err) => {
         console.error(
           "Failed to load product:",
-          error
+          err
         );
 
         setProduct(null);
 
-      } finally {
-
         setLoading(false);
-
-      }
-    };
-
-    loadProduct();
-
+      });
   }, [id]);
 
   /*
   |--------------------------------------------------------------------------
-  | PRODUCT IMAGE
+  | Add To Cart
   |--------------------------------------------------------------------------
   */
 
-  const getImageSrc = (
-    image
-  ) => {
+  const handleAddToCart = async () => {
+    /*
+     * User must login first
+     */
+
+    if (!user) {
+      navigate("/login");
+
+      return;
+    }
+
+    /*
+     * Product validation
+     */
+
+    if (!product) {
+      return;
+    }
+
+    /*
+     * Out of stock validation
+     */
+
+    if (
+      Number(product.stock) <= 0
+    ) {
+      setCartError(
+        "This product is currently out of stock."
+      );
+
+      return;
+    }
+
+    /*
+     * Quantity validation
+     */
+
+    if (
+      quantity < 1 ||
+      quantity > Number(product.stock)
+    ) {
+      setCartError(
+        `Only ${product.stock} item(s) are available.`
+      );
+
+      return;
+    }
+
+    try {
+      setAddingToCart(true);
+
+      setCartError("");
+
+      setCartMessage("");
+
+      setAdded(false);
+
+      /*
+      |--------------------------------------------------------------------------
+      | POST /api/cart
+      |--------------------------------------------------------------------------
+      */
+
+      const response =
+        await addToCart(
+          product.id,
+          quantity
+        );
+
+      console.log(
+        "Add to cart response:",
+        response
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | Notify Navbar that cart changed
+      |--------------------------------------------------------------------------
+      |
+      | Navbar listens to "cartUpdated"
+      | and reloads GET /api/cart.
+      |
+      */
+
+      window.dispatchEvent(
+        new Event("cartUpdated")
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | Success UI
+      |--------------------------------------------------------------------------
+      */
+
+      setAdded(true);
+
+      setCartMessage(
+        `${product.name} added to your cart successfully.`
+      );
+
+      /*
+       * Reset quantity after adding
+       */
+
+      setQuantity(1);
+
+      /*
+       * Reset green button
+       */
+
+      setTimeout(() => {
+        setAdded(false);
+      }, 2000);
+
+    } catch (err) {
+
+      console.error(
+        "Add to cart error:",
+        err
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | Unauthorized
+      |--------------------------------------------------------------------------
+      */
+
+      if (
+        err.response?.status === 401
+      ) {
+        setCartError(
+          "Please login before adding products to your cart."
+        );
+
+        return;
+      }
+
+      /*
+      |--------------------------------------------------------------------------
+      | Validation / backend error
+      |--------------------------------------------------------------------------
+      */
+
+      setCartError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Unable to add this product to the cart."
+      );
+
+    } finally {
+
+      setAddingToCart(false);
+
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Decrease Quantity
+  |--------------------------------------------------------------------------
+  */
+
+  const handleDecreaseQuantity = () => {
+    setCartError("");
+
+    setQuantity(
+      (currentQuantity) =>
+        Math.max(
+          1,
+          currentQuantity - 1
+        )
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Increase Quantity
+  |--------------------------------------------------------------------------
+  */
+
+  const handleIncreaseQuantity = () => {
+    setCartError("");
+
+    if (!product) {
+      return;
+    }
+
+    /*
+     * Prevent quantity from
+     * becoming greater than stock
+     */
+
+    if (
+      quantity >=
+      Number(product.stock)
+    ) {
+      setCartError(
+        `Only ${product.stock} item(s) are available in stock.`
+      );
+
+      return;
+    }
+
+    setQuantity(
+      (currentQuantity) =>
+        currentQuantity + 1
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Placeholder Image
+  |--------------------------------------------------------------------------
+  */
+
+  const placeholderImage = `${
+    import.meta.env.BASE_URL
+  }images/products/placeholder.svg`;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Get Product Image URL
+  |--------------------------------------------------------------------------
+  */
+
+  const getImageSrc = (image) => {
     if (!image) {
       return placeholderImage;
     }
@@ -134,7 +333,7 @@ function ProductDetails() {
       String(image).trim();
 
     /*
-     * Full external URL
+     * External full URL
      */
 
     if (
@@ -149,16 +348,8 @@ function ProductDetails() {
     }
 
     /*
-     * Laravel public storage
+     * Backend storage image
      */
-
-    if (
-      cleanImage.startsWith(
-        "/storage/"
-      )
-    ) {
-      return `http://127.0.0.1:8000${cleanImage}`;
-    }
 
     if (
       cleanImage.startsWith(
@@ -168,18 +359,18 @@ function ProductDetails() {
       return `http://127.0.0.1:8000/${cleanImage}`;
     }
 
-    /*
-     * Frontend public product
-     * images
-     */
-
     if (
       cleanImage.startsWith(
-        "/images/products/"
+        "/storage/"
       )
     ) {
-      return cleanImage;
+      return `http://127.0.0.1:8000${cleanImage}`;
     }
+
+    /*
+     * Already starts with
+     * images/products/
+     */
 
     if (
       cleanImage.startsWith(
@@ -191,21 +382,19 @@ function ProductDetails() {
       }${cleanImage}`;
     }
 
-    /*
-     * Normal frontend public path
-     */
-
     if (
-      cleanImage.startsWith("/")
+      cleanImage.startsWith(
+        "/images/products/"
+      )
     ) {
       return cleanImage;
     }
 
     /*
-     * Image filename only
+     * Only filename
      *
-     * example:
-     * samsung.jpg
+     * Example:
+     * samsungS23.jpg
      */
 
     return `${
@@ -215,288 +404,29 @@ function ProductDetails() {
 
   /*
   |--------------------------------------------------------------------------
-  | DECREASE QUANTITY
-  |--------------------------------------------------------------------------
-  */
-
-  const handleDecreaseQuantity =
-    () => {
-
-      setCartError("");
-
-      setQuantity(
-        (currentQuantity) =>
-          Math.max(
-            1,
-            currentQuantity - 1
-          )
-      );
-    };
-
-  /*
-  |--------------------------------------------------------------------------
-  | INCREASE QUANTITY
-  |--------------------------------------------------------------------------
-  */
-
-  const handleIncreaseQuantity =
-    () => {
-
-      if (!product) {
-        return;
-      }
-
-      setCartError("");
-
-      const stock =
-        Number(
-          product.stock || 0
-        );
-
-      /*
-       * Do not allow quantity
-       * greater than stock
-       */
-
-      if (
-        quantity >= stock
-      ) {
-
-        setCartError(
-          `Only ${stock} item(s) are available in stock.`
-        );
-
-        return;
-      }
-
-      setQuantity(
-        (currentQuantity) =>
-          currentQuantity + 1
-      );
-    };
-
-  /*
-  |--------------------------------------------------------------------------
-  | ADD TO CART
-  |--------------------------------------------------------------------------
-  */
-
-  const handleAddToCart =
-    async () => {
-
-      /*
-       * Login required
-       */
-
-      if (
-        !user ||
-        !token
-      ) {
-
-        navigate(
-          "/login"
-        );
-
-        return;
-      }
-
-      /*
-       * Product must exist
-       */
-
-      if (!product) {
-        return;
-      }
-
-      const stock =
-        Number(
-          product.stock || 0
-        );
-
-      /*
-       * Stock validation
-       */
-
-      if (stock <= 0) {
-
-        setCartError(
-          "This product is currently out of stock."
-        );
-
-        return;
-      }
-
-      /*
-       * Quantity validation
-       */
-
-      if (
-        quantity < 1 ||
-        quantity > stock
-      ) {
-
-        setCartError(
-          `Only ${stock} item(s) are available.`
-        );
-
-        return;
-      }
-
-      try {
-
-        setAddingToCart(true);
-
-        setAdded(false);
-
-        setCartError("");
-
-        setCartMessage("");
-
-        /*
-        |--------------------------------------------------------------------------
-        | ADD PRODUCT
-        |--------------------------------------------------------------------------
-        */
-
-        await addToCart(
-          product.id,
-          quantity
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE NAVBAR CART COUNT
-        |--------------------------------------------------------------------------
-        |
-        | Navbar.jsx listens for
-        | cartUpdated.
-        |
-        */
-
-        window.dispatchEvent(
-          new Event(
-            "cartUpdated"
-          )
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUCCESS
-        |--------------------------------------------------------------------------
-        */
-
-        setAdded(true);
-
-        setCartMessage(
-          `${product.name} added to your cart successfully.`
-        );
-
-        /*
-         * Reset quantity
-         */
-
-        setQuantity(1);
-
-        /*
-         * Reset success button
-         */
-
-        setTimeout(() => {
-
-          setAdded(false);
-
-        }, 2000);
-
-      } catch (error) {
-
-        console.error(
-          "Add to cart error:",
-          error
-        );
-
-        /*
-         * Unauthorized
-         */
-
-        if (
-          error.response
-            ?.status === 401
-        ) {
-
-          setCartError(
-            "Please login before adding products to your cart."
-          );
-
-          return;
-        }
-
-        /*
-         * Forbidden
-         */
-
-        if (
-          error.response
-            ?.status === 403
-        ) {
-
-          setCartError(
-            error.response
-              ?.data?.message ||
-              "This account cannot use the shopping cart."
-          );
-
-          return;
-        }
-
-        /*
-         * Validation /
-         * backend error
-         */
-
-        setCartError(
-          error.response
-            ?.data?.message ||
-            error.response
-              ?.data?.error ||
-            "Unable to add this product to the cart."
-        );
-
-      } finally {
-
-        setAddingToCart(false);
-
-      }
-    };
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOADING
+  | Loading Screen
   |--------------------------------------------------------------------------
   */
 
   if (loading) {
-
     return (
-
-      <main
+      <div
         style={{
           background:
             "linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%)",
 
-          minHeight:
-            "100vh",
+          minHeight: "100vh",
 
-          padding:
-            "48px 0",
+          color: "#0f172a",
+
+          padding: "48px 0",
         }}
       >
-
         <div className="container">
 
           <div
             style={{
-              background:
-                "#ffffff",
+              background: "#ffffff",
 
               border:
                 "1px solid #e7eefb",
@@ -507,24 +437,25 @@ function ProductDetails() {
               padding:
                 "32px",
 
-              textAlign:
-                "center",
-
               boxShadow:
                 "0 16px 34px rgba(15, 23, 42, 0.06)",
+
+              textAlign:
+                "center",
             }}
           >
 
             <p
+              className="mb-2"
               style={{
+                fontSize:
+                  "12px",
+
                 color:
                   "#2563eb",
 
                 fontWeight:
                   700,
-
-                fontSize:
-                  "12px",
 
                 letterSpacing:
                   "0.08em",
@@ -533,16 +464,14 @@ function ProductDetails() {
                   "uppercase",
               }}
             >
-              Product Details
+              Product details
             </p>
-
-            <div
-              className="spinner-border text-primary mb-3"
-              role="status"
-            />
 
             <p
               style={{
+                fontSize:
+                  "16px",
+
                 color:
                   "#64748b",
 
@@ -556,29 +485,28 @@ function ProductDetails() {
           </div>
 
         </div>
-
-      </main>
-
+      </div>
     );
   }
 
   /*
   |--------------------------------------------------------------------------
-  | PRODUCT NOT FOUND
+  | Product Not Found
   |--------------------------------------------------------------------------
   */
 
   if (!product) {
-
     return (
-
-      <main
+      <div
         style={{
           background:
             "linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%)",
 
           minHeight:
             "100vh",
+
+          color:
+            "#0f172a",
 
           padding:
             "48px 0",
@@ -601,63 +529,84 @@ function ProductDetails() {
               padding:
                 "32px",
 
-              textAlign:
-                "center",
-
               boxShadow:
                 "0 16px 34px rgba(15, 23, 42, 0.06)",
+
+              textAlign:
+                "center",
             }}
           >
 
-            <h3
+            <p
+              className="mb-2"
               style={{
+                fontSize:
+                  "12px",
+
                 color:
-                  "#0f172a",
+                  "#2563eb",
+
+                fontWeight:
+                  700,
+
+                letterSpacing:
+                  "0.08em",
+
+                textTransform:
+                  "uppercase",
               }}
             >
-              Product not found
-            </h3>
+              Product details
+            </p>
 
             <p
+              className="mb-3"
               style={{
+                fontSize:
+                  "16px",
+
                 color:
                   "#64748b",
               }}
             >
-              The requested product
-              could not be loaded.
+              Product not found.
             </p>
 
             <Link
               to="/products"
-              className="btn btn-primary"
+              style={{
+                fontSize:
+                  "14px",
+
+                color:
+                  "#2563eb",
+
+                textDecoration:
+                  "none",
+
+                fontWeight:
+                  700,
+              }}
             >
-              Back to Products
+              ← Back to Products
             </Link>
 
           </div>
 
         </div>
 
-      </main>
-
+      </div>
     );
   }
 
   /*
   |--------------------------------------------------------------------------
-  | PRODUCT DETAILS
+  | Product Details Page
   |--------------------------------------------------------------------------
   */
 
-  const stock =
-    Number(
-      product.stock || 0
-    );
-
   return (
-
-    <main
+    <div
       style={{
         background:
           "linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%)",
@@ -676,12 +625,11 @@ function ProductDetails() {
       <div className="container">
 
         {/* ================================================================
-            BACK BUTTON
+            BACK TO PRODUCTS
         ================================================================ */}
 
         <Link
           to="/products"
-
           style={{
             display:
               "inline-flex",
@@ -709,20 +657,21 @@ function ProductDetails() {
           }}
         >
 
-          ← Back to Products
+          <span aria-hidden="true">
+            ←
+          </span>
+
+          <span>
+            Back to Products
+          </span>
 
         </Link>
 
 
-        {/* ================================================================
-            PRODUCT MAIN SECTION
-        ================================================================ */}
-
         <div className="row g-5 align-items-start">
 
-
           {/* ==============================================================
-              IMAGE
+              PRODUCT IMAGE
           ============================================================== */}
 
           <div className="col-12 col-lg-5">
@@ -775,12 +724,12 @@ function ProductDetails() {
                     "18px",
                 }}
 
-                onError={(event) => {
+                onError={(e) => {
 
-                  event.currentTarget.onerror =
+                  e.currentTarget.onerror =
                     null;
 
-                  event.currentTarget.src =
+                  e.currentTarget.src =
                     placeholderImage;
 
                 }}
@@ -792,7 +741,7 @@ function ProductDetails() {
 
 
           {/* ==============================================================
-              DETAILS
+              PRODUCT INFORMATION
           ============================================================== */}
 
           <div className="col-12 col-lg-7">
@@ -816,12 +765,12 @@ function ProductDetails() {
               }}
             >
 
-
-              {/* BRAND */}
+              {/* ----------------------------------------------------------
+                  BRAND
+              ---------------------------------------------------------- */}
 
               <p
                 className="mb-2"
-
                 style={{
                   fontSize:
                     "12.5px",
@@ -847,11 +796,12 @@ function ProductDetails() {
               </p>
 
 
-              {/* PRODUCT NAME */}
+              {/* ----------------------------------------------------------
+                  PRODUCT NAME
+              ---------------------------------------------------------- */}
 
               <h2
                 className="fw-bold mb-3"
-
                 style={{
                   fontSize:
                     "28px",
@@ -866,7 +816,9 @@ function ProductDetails() {
               </h2>
 
 
-              {/* PRICE + RATING */}
+              {/* ----------------------------------------------------------
+                  PRICE + RATING
+              ---------------------------------------------------------- */}
 
               <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
 
@@ -905,33 +857,35 @@ function ProductDetails() {
                       700,
 
                     background:
-                      "#fff7ed",
+                      "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
 
                     padding:
                       "6px 12px",
 
                     borderRadius:
                       "999px",
+
+                    boxShadow:
+                      "inset 0 1px 2px rgba(249, 115, 22, 0.12)",
                   }}
                 >
 
                   ★{" "}
 
-                  {Number(
-                    product.rating ||
-                    0
-                  ).toFixed(1)}
+                  {product.rating ||
+                    0}
 
                 </span>
 
               </div>
 
 
-              {/* DESCRIPTION */}
+              {/* ----------------------------------------------------------
+                  DESCRIPTION
+              ---------------------------------------------------------- */}
 
               <p
                 className="mb-4"
-
                 style={{
                   fontSize:
                     "14.5px",
@@ -944,8 +898,7 @@ function ProductDetails() {
                 }}
               >
 
-                {product.description ||
-                  "No description available."}
+                {product.description}
 
               </p>
 
@@ -956,7 +909,6 @@ function ProductDetails() {
 
               <div
                 className="mb-4"
-
                 style={{
                   background:
                     "#f8fafc",
@@ -972,98 +924,248 @@ function ProductDetails() {
                 }}
               >
 
-                <h6 className="fw-bold mb-3">
+                <h6
+                  className="fw-bold mb-3"
+                  style={{
+                    fontSize:
+                      "14px",
+
+                    color:
+                      "#0f172a",
+                  }}
+                >
                   Specifications
                 </h6>
 
 
-                {/* CATEGORY */}
+                <div
+                  style={{
+                    fontSize:
+                      "13.5px",
+                  }}
+                >
 
-                <SpecificationRow
-                  label="Category"
-                  value={
-                    product.category
-                      ?.name ||
-                    "—"
-                  }
-                />
+                  {/* CATEGORY */}
 
-
-                {/* SUBCATEGORY */}
-
-                <SpecificationRow
-                  label="Subcategory"
-                  value={
-                    product.subcategory
-                      ?.name ||
-                    "—"
-                  }
-                />
-
-
-                {/* BRAND */}
-
-                <SpecificationRow
-                  label="Brand"
-                  value={
-                    product.brand ||
-                    "—"
-                  }
-                />
-
-
-                {/* COLOR */}
-
-                <SpecificationRow
-                  label="Color"
-                  value={
-                    product.color ||
-                    "—"
-                  }
-                />
-
-
-                {/* SIZE */}
-
-                <SpecificationRow
-                  label="Size"
-                  value={
-                    product.size ||
-                    "—"
-                  }
-                />
-
-
-                {/* STOCK */}
-
-                <div className="d-flex justify-content-between align-items-center py-2">
-
-                  <span
+                  <div
+                    className="d-flex justify-content-between align-items-center py-2"
                     style={{
-                      color:
-                        "#64748b",
-                    }}
-                  >
-                    Stock
-                  </span>
-
-                  <span
-                    style={{
-                      fontWeight:
-                        600,
-
-                      color:
-                        stock > 0
-                          ? "#16a34a"
-                          : "#dc2626",
+                      borderBottom:
+                        "1px solid #e7eefb",
                     }}
                   >
 
-                    {stock > 0
-                      ? `${stock} available`
-                      : "Out of stock"}
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Category
+                    </span>
 
-                  </span>
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+
+                      {product.category?.name ||
+                        "—"}
+
+                    </span>
+
+                  </div>
+
+
+                  {/* SUBCATEGORY */}
+
+                  <div
+                    className="d-flex justify-content-between align-items-center py-2"
+                    style={{
+                      borderBottom:
+                        "1px solid #e7eefb",
+                    }}
+                  >
+
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Subcategory
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+
+                      {product.subcategory?.name ||
+                        "—"}
+
+                    </span>
+
+                  </div>
+
+
+                  {/* BRAND */}
+
+                  <div
+                    className="d-flex justify-content-between align-items-center py-2"
+                    style={{
+                      borderBottom:
+                        "1px solid #e7eefb",
+                    }}
+                  >
+
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Brand
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+
+                      {product.brand ||
+                        "—"}
+
+                    </span>
+
+                  </div>
+
+
+                  {/* COLOR */}
+
+                  <div
+                    className="d-flex justify-content-between align-items-center py-2"
+                    style={{
+                      borderBottom:
+                        "1px solid #e7eefb",
+                    }}
+                  >
+
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Color
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+
+                      {product.color ||
+                        "—"}
+
+                    </span>
+
+                  </div>
+
+
+                  {/* SIZE */}
+
+                  <div
+                    className="d-flex justify-content-between align-items-center py-2"
+                    style={{
+                      borderBottom:
+                        "1px solid #e7eefb",
+                    }}
+                  >
+
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Size
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+
+                      {product.size ||
+                        "—"}
+
+                    </span>
+
+                  </div>
+
+
+                  {/* STOCK */}
+
+                  <div className="d-flex justify-content-between align-items-center py-2">
+
+                    <span
+                      style={{
+                        color:
+                          "#64748b",
+                      }}
+                    >
+                      Stock
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight:
+                          600,
+
+                        color:
+                          Number(
+                            product.stock
+                          ) > 0
+                            ? "#16a34a"
+                            : "#dc2626",
+                      }}
+                    >
+
+                      {Number(
+                        product.stock
+                      ) > 0
+                        ? `${product.stock} available`
+                        : "Out of stock"}
+
+                    </span>
+
+                  </div>
 
                 </div>
 
@@ -1071,7 +1173,7 @@ function ProductDetails() {
 
 
               {/* ==========================================================
-                  SUCCESS MESSAGE
+                  CART SUCCESS MESSAGE
               ========================================================== */}
 
               {cartMessage && (
@@ -1112,7 +1214,7 @@ function ProductDetails() {
 
 
               {/* ==========================================================
-                  ERROR MESSAGE
+                  CART ERROR
               ========================================================== */}
 
               {cartError && (
@@ -1153,13 +1255,15 @@ function ProductDetails() {
 
 
               {/* ==========================================================
-                  QUANTITY + CART
+                  QUANTITY + ADD TO CART
               ========================================================== */}
 
               <div className="d-flex flex-column flex-md-row align-items-stretch gap-3">
 
 
-                {/* QUANTITY */}
+                {/* --------------------------------------------------------
+                    QUANTITY
+                -------------------------------------------------------- */}
 
                 <div
                   className="d-flex align-items-center justify-content-center"
@@ -1215,13 +1319,13 @@ function ProductDetails() {
                       fontSize:
                         "18px",
 
-                      fontWeight:
-                        700,
-
                       color:
                         quantity <= 1
                           ? "#94a3b8"
                           : "#2563eb",
+
+                      fontWeight:
+                        700,
 
                       cursor:
                         quantity <= 1
@@ -1229,7 +1333,9 @@ function ProductDetails() {
                           : "pointer",
                     }}
                   >
+
                     −
+
                   </button>
 
 
@@ -1273,8 +1379,10 @@ function ProductDetails() {
 
                     disabled={
                       addingToCart ||
-                      quantity >= stock ||
-                      stock <= 0
+                      quantity >=
+                        Number(
+                          product.stock
+                        )
                     }
 
                     aria-label="Increase quantity"
@@ -1295,29 +1403,37 @@ function ProductDetails() {
                       fontSize:
                         "18px",
 
-                      fontWeight:
-                        700,
-
                       color:
-                        quantity >= stock ||
-                        stock <= 0
+                        quantity >=
+                        Number(
+                          product.stock
+                        )
                           ? "#94a3b8"
                           : "#2563eb",
 
+                      fontWeight:
+                        700,
+
                       cursor:
-                        quantity >= stock ||
-                        stock <= 0
+                        quantity >=
+                        Number(
+                          product.stock
+                        )
                           ? "not-allowed"
                           : "pointer",
                     }}
                   >
+
                     +
+
                   </button>
 
                 </div>
 
 
-                {/* ADD TO CART */}
+                {/* --------------------------------------------------------
+                    ADD TO CART
+                -------------------------------------------------------- */}
 
                 <button
                   type="button"
@@ -1328,18 +1444,55 @@ function ProductDetails() {
 
                   disabled={
                     addingToCart ||
-                    stock <= 0
+                    Number(
+                      product.stock
+                    ) <= 0
                   }
+
+                  onMouseEnter={(e) => {
+
+                    if (
+                      !addingToCart &&
+                      Number(
+                        product.stock
+                      ) > 0
+                    ) {
+
+                      e.currentTarget.style.transform =
+                        "translateY(-2px)";
+
+                      e.currentTarget.style.boxShadow =
+                        "0 12px 26px rgba(37, 99, 235, 0.26)";
+
+                    }
+
+                  }}
+
+                  onMouseLeave={(e) => {
+
+                    e.currentTarget.style.transform =
+                      "none";
+
+                    e.currentTarget.style.boxShadow =
+                      "0 10px 22px rgba(37, 99, 235, 0.2)";
+
+                  }}
 
                   style={{
                     flex:
                       1,
 
                     background:
-                      stock <= 0
+                      Number(
+                        product.stock
+                      ) <= 0
+
                         ? "#94a3b8"
+
                         : added
+
                         ? "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)"
+
                         : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
 
                     color:
@@ -1360,12 +1513,17 @@ function ProductDetails() {
                     fontWeight:
                       700,
 
+                    transition:
+                      "transform 0.2s ease, box-shadow 0.2s ease",
+
                     boxShadow:
                       "0 10px 22px rgba(37, 99, 235, 0.2)",
 
                     cursor:
                       addingToCart ||
-                      stock <= 0
+                      Number(
+                        product.stock
+                      ) <= 0
                         ? "not-allowed"
                         : "pointer",
 
@@ -1373,18 +1531,23 @@ function ProductDetails() {
                       addingToCart
                         ? 0.8
                         : 1,
-
-                    transition:
-                      "all 0.2s ease",
                   }}
                 >
 
-                  {stock <= 0
+                  {Number(
+                    product.stock
+                  ) <= 0
+
                     ? "Out of Stock"
+
                     : addingToCart
+
                     ? "Adding..."
+
                     : added
+
                     ? "✓ Added to Cart"
+
                     : "Add to Cart"}
 
                 </button>
@@ -1392,7 +1555,9 @@ function ProductDetails() {
               </div>
 
 
-              {/* VIEW CART */}
+              {/* ==========================================================
+                  VIEW CART
+              ========================================================== */}
 
               {added && (
 
@@ -1423,7 +1588,9 @@ function ProductDetails() {
                         "none",
                     }}
                   >
+
                     View Cart →
+
                   </Link>
 
                 </div>
@@ -1438,75 +1605,18 @@ function ProductDetails() {
 
 
         {/* ================================================================
-            REVIEWS
+            PRODUCT REVIEWS
         ================================================================ */}
 
-        <div
-          style={{
-            marginTop:
-              "48px",
-          }}
-        >
-
-          <ReviewSection
-            productId={
-              product.id
-            }
-          />
-
-        </div>
+        <ReviewSection
+          productId={
+            product.id
+          }
+        />
 
       </div>
 
-    </main>
-  );
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| SPECIFICATION ROW COMPONENT
-|--------------------------------------------------------------------------
-*/
-
-function SpecificationRow({
-  label,
-  value,
-}) {
-  return (
-
-    <div
-      className="d-flex justify-content-between align-items-center py-2"
-
-      style={{
-        borderBottom:
-          "1px solid #e7eefb",
-      }}
-    >
-
-      <span
-        style={{
-          color:
-            "#64748b",
-        }}
-      >
-        {label}
-      </span>
-
-      <span
-        style={{
-          color:
-            "#0f172a",
-
-          fontWeight:
-            600,
-        }}
-      >
-        {value}
-      </span>
-
     </div>
-
   );
 }
 
