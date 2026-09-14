@@ -50,7 +50,7 @@ function SellerProducts() {
   const edit = (product) => { setEditingId(product.id); setForm({ ...blank, ...product, category_id: String(product.category_id), subcategory_id: product.subcategory_id ? String(product.subcategory_id) : "" }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const remove = async (id) => { if (!window.confirm("Delete this product permanently?")) return; try { await deleteProduct(token, id); setProducts(products.filter((product) => product.id !== id)); showToast("Product deleted.", "success"); } catch (error) { showToast(error.response?.data?.message || "Could not delete product.", "danger"); } };
 
-  if (!['SELLER', 'ADMIN'].includes(user?.role)) return <><Navbar /><main className="container py-5"><div className="alert alert-warning">A seller account is required to manage products.</div></main><Footer /></>;
+  if (!["seller", "admin"].includes(user?.role)) return <><Navbar /><main className="container py-5"><div className="alert alert-warning">A seller account is required to manage products.</div></main><Footer /></>;
   return <div className="app-page"><Navbar /><main className="container py-5">
     <div className="d-flex justify-content-between align-items-center mb-4"><div><span className="section-kicker">Seller workspace</span><h1 className="mt-2">Product Management</h1></div><Link className="btn btn-outline-primary" to="/seller/dashboard">Dashboard</Link></div>
     {!categories.length && <div className="alert alert-info d-flex justify-content-between align-items-center"><span>Create a category before adding your first product.</span><Link className="btn btn-sm btn-primary" to="/seller/categories">Manage Categories</Link></div>}
