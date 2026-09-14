@@ -6,49 +6,95 @@ use App\Models\Product;
 use App\Models\Subcategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'subcategory_id' => ['nullable', 'integer', 'exists:subcategories,id'],
+            'brand' => ['nullable', 'string', 'max:100'],
+            'color' => ['nullable', 'string', 'max:100'],
+            'size' => ['nullable', 'string', 'max:100'],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'min:0'],
+            'min_rating' => ['nullable', 'numeric', 'between:0,5'],
+            'sort' => ['nullable', Rule::in(['latest', 'price_asc', 'price_desc', 'rating', 'name'])],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'between:1,48'],
+        ]);
+
+        if (isset($filters['min_price'], $filters['max_price']) && $filters['max_price'] < $filters['min_price']) {
+            throw ValidationException::withMessages(['max_price' => 'The maximum price must be greater than or equal to the minimum price.']);
+        }
+
         $query = Product::with(['category', 'subcategory', 'seller:id,full_name']);
+        $effectivePrice = '(price * (1 - discount_percentage / 100.0))';
 
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%'.$request->search.'%');
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('name', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
         }
 
-        if ($request->filled('brand')) {
-            $query->where('brand', $request->brand);
+        if (! empty($filters['subcategory_id'])) {
+            $query->where('subcategory_id', $filters['subcategory_id']);
         }
 
-        if ($request->filled('color')) {
-            $query->where('color', $request->color);
+        if (! empty($filters['brand'])) {
+            $query->where('brand', $filters['brand']);
         }
 
-        if ($request->filled('size')) {
-            $query->where('size', $request->size);
+        if (! empty($filters['color'])) {
+            $query->where('color', $filters['color']);
         }
 
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+        if (! empty($filters['size'])) {
+            $query->where('size', $filters['size']);
         }
 
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+        if (isset($filters['min_price'])) {
+            $query->whereRaw("{$effectivePrice} >= CAST(? AS DECIMAL(12, 2))", [$filters['min_price']]);
         }
 
-        if ($request->filled('min_rating')) {
-            $query->where('rating', '>=', $request->min_rating);
+        if (isset($filters['max_price'])) {
+            $query->whereRaw("{$effectivePrice} <= CAST(? AS DECIMAL(12, 2))", [$filters['max_price']]);
         }
 
-        $products = $query->get();
+        if (isset($filters['min_rating'])) {
+            $query->where('rating', '>=', $filters['min_rating']);
+        }
 
-        return response()->json($products);
+        match ($filters['sort'] ?? 'latest') {
+            'price_asc' => $query->orderByRaw("{$effectivePrice} asc"),
+            'price_desc' => $query->orderByRaw("{$effectivePrice} desc"),
+            'rating' => $query->orderByDesc('rating'),
+            'name' => $query->orderBy('name'),
+            default => $query->latest(),
+        };
+
+        $products = $query->paginate($filters['per_page'] ?? 12);
+
+        return response()->json([
+            'data' => $products->items(),
+            'meta' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
+        ]);
     }
 
     public function homepage(): JsonResponse

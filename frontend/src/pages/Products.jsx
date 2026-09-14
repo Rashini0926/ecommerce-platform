@@ -81,6 +81,17 @@ function Products() {
   const [minRating, setMinRating] =
     useState("");
 
+  const [sort, setSort] =
+    useState("latest");
+
+  const [pagination, setPagination] =
+    useState({
+      current_page: 1,
+      last_page: 1,
+      per_page: 12,
+      total: 0,
+    });
+
   /*
   ==========================================================
   WISHLIST STATE
@@ -99,7 +110,8 @@ function Products() {
   */
 
   const fetchProducts = async (
-    customFilters = null
+    customFilters = null,
+    page = 1
   ) => {
     try {
       setLoading(true);
@@ -115,6 +127,7 @@ function Products() {
           minPrice,
           maxPrice,
           minRating,
+          sort,
         };
 
       const params =
@@ -219,6 +232,14 @@ function Products() {
         );
       }
 
+      params.set(
+        "sort",
+        filters.sort || "latest"
+      );
+
+      params.set("page", page);
+      params.set("per_page", 12);
+
       const response = await fetch(
         `${API_URL}/products?${params.toString()}`
       );
@@ -229,10 +250,18 @@ function Products() {
         );
       }
 
-      const data =
+      const payload =
         await response.json();
 
-      setProducts(data);
+      setProducts(payload.data || []);
+      setPagination(
+        payload.meta || {
+          current_page: 1,
+          last_page: 1,
+          per_page: 12,
+          total: 0,
+        }
+      );
 
     } catch (error) {
 
@@ -242,6 +271,12 @@ function Products() {
       );
 
       setProducts([]);
+      setPagination((previous) => ({
+        ...previous,
+        current_page: 1,
+        last_page: 1,
+        total: 0,
+      }));
 
     } finally {
 
@@ -260,6 +295,9 @@ function Products() {
     let cancelled = false;
     const params = new URLSearchParams();
     if (initialSearch) params.set("search", initialSearch);
+    params.set("sort", "latest");
+    params.set("page", "1");
+    params.set("per_page", "12");
 
     Promise.all([
       fetch(`${API_URL}/categories`),
@@ -273,7 +311,13 @@ function Products() {
         if (cancelled) return;
         setCategories(categoryData);
         setSubcategories(categoryData.flatMap((category) => category.subcategories || []));
-        setProducts(productData);
+        setProducts(productData.data || []);
+        setPagination(productData.meta || {
+          current_page: 1,
+          last_page: 1,
+          per_page: 12,
+          total: 0,
+        });
         setSearch(initialSearch);
       })
       .catch((error) => {
@@ -367,6 +411,8 @@ function Products() {
 
     setMinRating("");
 
+    setSort("latest");
+
     fetchProducts({
       search: "",
       categoryId: "",
@@ -377,7 +423,39 @@ function Products() {
       minPrice: "",
       maxPrice: "",
       minRating: "",
+      sort: "latest",
     });
+  };
+
+  const handleSortChange = (event) => {
+    const nextSort = event.target.value;
+
+    setSort(nextSort);
+    fetchProducts({
+      search,
+      categoryId,
+      subcategoryId,
+      brand,
+      color,
+      size,
+      minPrice,
+      maxPrice,
+      minRating,
+      sort: nextSort,
+    });
+  };
+
+  const changePage = (page) => {
+    if (
+      loading ||
+      page < 1 ||
+      page > pagination.last_page
+    ) {
+      return;
+    }
+
+    fetchProducts(null, page);
+    window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
   /*
@@ -1001,8 +1079,8 @@ function Products() {
 
                     {loading
                       ? "Loading products..."
-                      : `${products.length} product${
-                          products.length !==
+                      : `${pagination.total} product${
+                          pagination.total !==
                           1
                             ? "s"
                             : ""
@@ -1010,6 +1088,25 @@ function Products() {
 
                   </p>
 
+                </div>
+
+                <div className="product-sort-control">
+                  <label htmlFor="product-sort">
+                    Sort by
+                  </label>
+
+                  <select
+                    id="product-sort"
+                    value={sort}
+                    onChange={handleSortChange}
+                    disabled={loading}
+                  >
+                    <option value="latest">Newest</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="name">Name: A to Z</option>
+                  </select>
                 </div>
 
               </div>
@@ -1349,6 +1446,39 @@ function Products() {
 
                   </div>
 
+                )}
+
+              {!loading &&
+                products.length > 0 &&
+                pagination.last_page > 1 && (
+                  <nav
+                    className="product-pagination"
+                    aria-label="Product results pages"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        changePage(pagination.current_page - 1)
+                      }
+                      disabled={pagination.current_page === 1}
+                    >
+                      Previous
+                    </button>
+
+                    <span>
+                      Page {pagination.current_page} of {pagination.last_page}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        changePage(pagination.current_page + 1)
+                      }
+                      disabled={pagination.current_page === pagination.last_page}
+                    >
+                      Next
+                    </button>
+                  </nav>
                 )}
 
             </div>
