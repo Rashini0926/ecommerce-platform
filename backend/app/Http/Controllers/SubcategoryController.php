@@ -4,15 +4,45 @@ namespace App\Http\Controllers;
 
 use App\Models\Subcategory;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SubcategoryController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Return all subcategories.
+     *
+     * Optional:
+     * /api/subcategories?category_id=2
+     */
+    public function index(Request $request): JsonResponse
     {
-        $subcategories = Subcategory::orderBy('category_id', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+        $query = Subcategory::query()
+            ->select([
+                'id',
+                'category_id',
+                'name',
+            ])
+            ->orderBy('category_id', 'asc')
+            ->orderBy('id', 'asc');
 
-        return response()->json($subcategories, 200);
+        /*
+        |--------------------------------------------------------------------------
+        | Optional category filtering
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('category_id')) {
+            $query->where(
+                'category_id',
+                $request->category_id
+            );
+        }
+
+        $subcategories = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'subcategories' => $subcategories,
+        ], 200);
     }
 }

@@ -1,7 +1,11 @@
 import "./Products.css";
 
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 
 import {
   FaSearch,
@@ -19,72 +23,154 @@ import {
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 
+import {
+  API_BASE_URL,
+} from "../utils/api";
+
+/*
+|--------------------------------------------------------------------------
+| PRICE FORMATTER
+|--------------------------------------------------------------------------
+|
+| Database prices are already stored in Sri Lankan Rupees.
+|
+*/
+
+const formatPrice = (amount) => {
+  return `Rs. ${Number(
+    amount || 0
+  ).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+/*
+|--------------------------------------------------------------------------
+| PRODUCTS PAGE
+|--------------------------------------------------------------------------
+*/
+
 function Products() {
-  const [searchParams] = useSearchParams();
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+
+  const API_URL =
+    API_BASE_URL;
+
+  /*
+  |--------------------------------------------------------------------------
+  | URL VALUES
+  |--------------------------------------------------------------------------
+  */
 
   const initialSearch =
     searchParams.get("search") || "";
 
-  const API_URL =
-    "http://127.0.0.1:8000/api";
+  const initialCategoryId =
+    searchParams.get(
+      "category_id"
+    ) || "";
+
+  const initialSubcategoryId =
+    searchParams.get(
+      "subcategory_id"
+    ) || "";
 
   /*
-  ==========================================================
-  DATA STATES
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | DATA STATES
+  |--------------------------------------------------------------------------
   */
 
-  const [products, setProducts] =
-    useState([]);
+  const [
+    products,
+    setProducts,
+  ] = useState([]);
 
-  const [categories, setCategories] =
-    useState([]);
+  const [
+    categories,
+    setCategories,
+  ] = useState([]);
 
-  const [subcategories, setSubcategories] =
-    useState([]);
+  const [
+    subcategories,
+    setSubcategories,
+  ] = useState([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    categoryLoading,
+    setCategoryLoading,
+  ] = useState(true);
 
   /*
-  ==========================================================
-  FILTER STATES
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | FILTER STATES
+  |--------------------------------------------------------------------------
   */
 
-  const [search, setSearch] =
-    useState(initialSearch);
+  const [
+    search,
+    setSearch,
+  ] = useState(
+    initialSearch
+  );
 
-  const [categoryId, setCategoryId] =
-    useState("");
+  const [
+    categoryId,
+    setCategoryId,
+  ] = useState(
+    initialCategoryId
+  );
 
   const [
     subcategoryId,
     setSubcategoryId,
+  ] = useState(
+    initialSubcategoryId
+  );
+
+  const [
+    brand,
+    setBrand,
   ] = useState("");
 
-  const [brand, setBrand] =
-    useState("");
+  const [
+    color,
+    setColor,
+  ] = useState("");
 
-  const [color, setColor] =
-    useState("");
+  const [
+    size,
+    setSize,
+  ] = useState("");
 
-  const [size, setSize] =
-    useState("");
+  const [
+    minPrice,
+    setMinPrice,
+  ] = useState("");
 
-  const [minPrice, setMinPrice] =
-    useState("");
+  const [
+    maxPrice,
+    setMaxPrice,
+  ] = useState("");
 
-  const [maxPrice, setMaxPrice] =
-    useState("");
-
-  const [minRating, setMinRating] =
-    useState("");
+  const [
+    minRating,
+    setMinRating,
+  ] = useState("");
 
   /*
-  ==========================================================
-  WISHLIST STATE
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | WISHLIST STATE
+  |--------------------------------------------------------------------------
   */
 
   const [
@@ -93,9 +179,73 @@ function Products() {
   ] = useState({});
 
   /*
-  ==========================================================
-  FETCH PRODUCTS
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | NORMALIZE CATEGORY RESPONSE
+  |--------------------------------------------------------------------------
+  */
+
+  const normalizeCategories = (
+    data
+  ) => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (
+      Array.isArray(
+        data?.categories
+      )
+    ) {
+      return data.categories;
+    }
+
+    if (
+      Array.isArray(
+        data?.data
+      )
+    ) {
+      return data.data;
+    }
+
+    return [];
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | NORMALIZE SUBCATEGORY RESPONSE
+  |--------------------------------------------------------------------------
+  */
+
+  const normalizeSubcategories = (
+    data
+  ) => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (
+      Array.isArray(
+        data?.subcategories
+      )
+    ) {
+      return data.subcategories;
+    }
+
+    if (
+      Array.isArray(
+        data?.data
+      )
+    ) {
+      return data.data;
+    }
+
+    return [];
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | FETCH PRODUCTS
+  |--------------------------------------------------------------------------
   */
 
   const fetchProducts = async (
@@ -121,107 +271,144 @@ function Products() {
         new URLSearchParams();
 
       /*
-      SEARCH
+      |--------------------------------------------------------------------------
+      | SEARCH
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.search) {
-        params.append(
+      if (
+        filters.search
+      ) {
+        params.set(
           "search",
           filters.search
         );
       }
 
       /*
-      CATEGORY
+      |--------------------------------------------------------------------------
+      | CATEGORY
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.categoryId) {
-        params.append(
+      if (
+        filters.categoryId
+      ) {
+        params.set(
           "category_id",
           filters.categoryId
         );
       }
 
       /*
-      SUBCATEGORY
+      |--------------------------------------------------------------------------
+      | SUBCATEGORY
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.subcategoryId) {
-        params.append(
+      if (
+        filters.subcategoryId
+      ) {
+        params.set(
           "subcategory_id",
           filters.subcategoryId
         );
       }
 
       /*
-      BRAND
+      |--------------------------------------------------------------------------
+      | BRAND
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.brand) {
-        params.append(
+      if (
+        filters.brand
+      ) {
+        params.set(
           "brand",
           filters.brand
         );
       }
 
       /*
-      COLOR
+      |--------------------------------------------------------------------------
+      | COLOR
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.color) {
-        params.append(
+      if (
+        filters.color
+      ) {
+        params.set(
           "color",
           filters.color
         );
       }
 
       /*
-      SIZE
+      |--------------------------------------------------------------------------
+      | SIZE
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.size) {
-        params.append(
+      if (
+        filters.size
+      ) {
+        params.set(
           "size",
           filters.size
         );
       }
 
       /*
-      MINIMUM PRICE
+      |--------------------------------------------------------------------------
+      | PRICE
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.minPrice) {
-        params.append(
+      if (
+        filters.minPrice
+      ) {
+        params.set(
           "min_price",
           filters.minPrice
         );
       }
 
-      /*
-      MAXIMUM PRICE
-      */
-
-      if (filters.maxPrice) {
-        params.append(
+      if (
+        filters.maxPrice
+      ) {
+        params.set(
           "max_price",
           filters.maxPrice
         );
       }
 
       /*
-      MINIMUM RATING
+      |--------------------------------------------------------------------------
+      | RATING
+      |--------------------------------------------------------------------------
       */
 
-      if (filters.minRating) {
-        params.append(
+      if (
+        filters.minRating
+      ) {
+        params.set(
           "min_rating",
           filters.minRating
         );
       }
 
-      const response = await fetch(
-        `${API_URL}/products?${params.toString()}`
-      );
+      const queryString =
+        params.toString();
+
+      const url =
+        queryString
+          ? `${API_URL}/products?${queryString}`
+          : `${API_URL}/products`;
+
+      const response =
+        await fetch(url);
 
       if (!response.ok) {
         throw new Error(
@@ -232,33 +419,56 @@ function Products() {
       const data =
         await response.json();
 
-      setProducts(data);
+      const productList =
+        Array.isArray(data)
+          ? data
+          : Array.isArray(
+              data?.products
+            )
+          ? data.products
+          : Array.isArray(
+              data?.data
+            )
+          ? data.data
+          : [];
 
+      setProducts(
+        productList
+      );
     } catch (error) {
-
       console.error(
         "Product loading error:",
         error
       );
 
       setProducts([]);
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
   /*
-  ==========================================================
-  FETCH CATEGORIES
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | FETCH CATEGORIES
+  |--------------------------------------------------------------------------
+  |
+  | Main source for category list.
+  |
+  | If each category already contains:
+  |
+  | subcategories: [...]
+  |
+  | we also collect them here.
+  |
   */
 
   const fetchCategories =
     async () => {
       try {
+        setCategoryLoading(
+          true
+        );
+
         const response =
           await fetch(
             `${API_URL}/categories`
@@ -273,22 +483,76 @@ function Products() {
         const data =
           await response.json();
 
-        setCategories(data);
+        const categoryList =
+          normalizeCategories(
+            data
+          );
 
+        setCategories(
+          categoryList
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXTRACT NESTED SUBCATEGORIES
+        |--------------------------------------------------------------------------
+        */
+
+        const nestedSubcategories =
+          categoryList.flatMap(
+            (category) => {
+              const children =
+                Array.isArray(
+                  category.subcategories
+                )
+                  ? category.subcategories
+                  : [];
+
+              return children.map(
+                (subcategory) => ({
+                  ...subcategory,
+
+                  category_id:
+                    subcategory.category_id ??
+                    category.id,
+                })
+              );
+            }
+          );
+
+        /*
+        |--------------------------------------------------------------------------
+        | USE NESTED DATA IMMEDIATELY
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          nestedSubcategories.length >
+          0
+        ) {
+          setSubcategories(
+            nestedSubcategories
+          );
+        }
       } catch (error) {
-
         console.error(
           "Category loading error:",
           error
         );
-
+      } finally {
+        setCategoryLoading(
+          false
+        );
       }
     };
 
   /*
-  ==========================================================
-  FETCH SUBCATEGORIES
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | FETCH ALL SUBCATEGORIES
+  |--------------------------------------------------------------------------
+  |
+  | This is also used as fallback.
+  |
   */
 
   const fetchSubcategories =
@@ -308,88 +572,184 @@ function Products() {
         const data =
           await response.json();
 
-        setSubcategories(data);
+        const list =
+          normalizeSubcategories(
+            data
+          );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Only replace when API actually returned records
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          list.length > 0
+        ) {
+          setSubcategories(
+            list
+          );
+        }
       } catch (error) {
-
         console.error(
           "Subcategory loading error:",
           error
         );
-
       }
     };
 
   /*
-  ==========================================================
-  FIRST PAGE LOAD
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | INITIAL LOAD
+  |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-
     fetchCategories();
-
     fetchSubcategories();
-
-    fetchProducts({
-      search: initialSearch,
-      categoryId: "",
-      subcategoryId: "",
-      brand: "",
-      color: "",
-      size: "",
-      minPrice: "",
-      maxPrice: "",
-      minRating: "",
-    });
-
   }, []);
 
   /*
-  ==========================================================
-  GET SUBCATEGORIES FOR SELECTED CATEGORY
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | URL PARAMETER CHANGE
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    const urlSearch =
+      searchParams.get(
+        "search"
+      ) || "";
+
+    const urlCategoryId =
+      searchParams.get(
+        "category_id"
+      ) || "";
+
+    const urlSubcategoryId =
+      searchParams.get(
+        "subcategory_id"
+      ) || "";
+
+    setSearch(
+      urlSearch
+    );
+
+    setCategoryId(
+      urlCategoryId
+    );
+
+    setSubcategoryId(
+      urlSubcategoryId
+    );
+
+    fetchProducts({
+      search:
+        urlSearch,
+
+      categoryId:
+        urlCategoryId,
+
+      subcategoryId:
+        urlSubcategoryId,
+
+      brand: "",
+
+      color: "",
+
+      size: "",
+
+      minPrice: "",
+
+      maxPrice: "",
+
+      minRating: "",
+    });
+  }, [searchParams]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | FILTERED SUBCATEGORIES
+  |--------------------------------------------------------------------------
+  |
+  | Example:
+  |
+  | Fashion category ID = 2
+  |
+  | only category_id = 2
+  | subcategories will show.
+  |
   */
 
   const filteredSubcategories =
-    categoryId
-      ? subcategories.filter(
-          (subcategory) =>
-            String(
-              subcategory.category_id
-            ) === String(categoryId)
-        )
-      : [];
+    useMemo(() => {
+      if (!categoryId) {
+        return [];
+      }
+
+      return subcategories.filter(
+        (subcategory) =>
+          String(
+            subcategory.category_id
+          ) ===
+          String(
+            categoryId
+          )
+      );
+    }, [
+      subcategories,
+      categoryId,
+    ]);
 
   /*
-  ==========================================================
-  CATEGORY CHANGE
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | CATEGORY CHANGE
+  |--------------------------------------------------------------------------
   */
 
   const handleCategoryChange = (
     event
   ) => {
-    const selectedCategoryId =
+    const newCategoryId =
       event.target.value;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Update category
+    |--------------------------------------------------------------------------
+    */
+
     setCategoryId(
-      selectedCategoryId
+      newCategoryId
     );
 
     /*
-    Reset old subcategory when
-    category changes.
+    |--------------------------------------------------------------------------
+    | Reset previous subcategory
+    |--------------------------------------------------------------------------
     */
 
     setSubcategoryId("");
   };
 
   /*
-  ==========================================================
-  APPLY FILTER
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | SUBCATEGORY CHANGE
+  |--------------------------------------------------------------------------
+  */
+
+  const handleSubcategoryChange = (
+    event
+  ) => {
+    setSubcategoryId(
+      event.target.value
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | APPLY FILTERS
+  |--------------------------------------------------------------------------
   */
 
   const handleFilter = (
@@ -397,17 +757,74 @@ function Products() {
   ) => {
     event.preventDefault();
 
-    fetchProducts();
+    /*
+    |--------------------------------------------------------------------------
+    | Update URL
+    |--------------------------------------------------------------------------
+    */
+
+    const params =
+      new URLSearchParams();
+
+    if (search) {
+      params.set(
+        "search",
+        search
+      );
+    }
+
+    if (categoryId) {
+      params.set(
+        "category_id",
+        categoryId
+      );
+    }
+
+    if (
+      subcategoryId
+    ) {
+      params.set(
+        "subcategory_id",
+        subcategoryId
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | This causes URL useEffect to run.
+    |--------------------------------------------------------------------------
+    */
+
+    setSearchParams(
+      params
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fetch immediately with every filter.
+    |--------------------------------------------------------------------------
+    */
+
+    fetchProducts({
+      search,
+      categoryId,
+      subcategoryId,
+      brand,
+      color,
+      size,
+      minPrice,
+      maxPrice,
+      minRating,
+    });
   };
 
   /*
-  ==========================================================
-  CLEAR FILTERS
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | CLEAR FILTERS
+  |--------------------------------------------------------------------------
   */
 
   const clearFilters = () => {
-
     setSearch("");
 
     setCategoryId("");
@@ -426,6 +843,8 @@ function Products() {
 
     setMinRating("");
 
+    setSearchParams({});
+
     fetchProducts({
       search: "",
       categoryId: "",
@@ -440,9 +859,9 @@ function Products() {
   };
 
   /*
-  ==========================================================
-  WISHLIST
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | WISHLIST
+  |--------------------------------------------------------------------------
   */
 
   const toggleWishlist = (
@@ -453,59 +872,122 @@ function Products() {
         ...previous,
 
         [productId]:
-          !previous[productId],
+          !previous[
+            productId
+          ],
       })
     );
   };
 
   /*
-  ==========================================================
-  PRODUCT IMAGE
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | IMAGE
+  |--------------------------------------------------------------------------
   */
 
   const getImageSrc = (
     image
   ) => {
-
     if (!image) {
       return "/images/products/placeholder.svg";
     }
 
+    const cleanImage =
+      String(
+        image
+      ).trim();
+
+    /*
+    |--------------------------------------------------------------------------
+    | FULL URL
+    |--------------------------------------------------------------------------
+    */
+
     if (
-      image.startsWith(
+      cleanImage.startsWith(
         "http://"
       ) ||
-      image.startsWith(
+      cleanImage.startsWith(
         "https://"
       )
     ) {
-      return image;
+      return cleanImage;
     }
 
-    return `/${image.replace(
-      /^\/+/,
-      ""
-    )}`;
+    /*
+    |--------------------------------------------------------------------------
+    | LARAVEL STORAGE
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      cleanImage.startsWith(
+        "storage/"
+      )
+    ) {
+      return `http://127.0.0.1:8000/${cleanImage}`;
+    }
+
+    if (
+      cleanImage.startsWith(
+        "/storage/"
+      )
+    ) {
+      return `http://127.0.0.1:8000${cleanImage}`;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FRONTEND PRODUCTS DIRECTORY
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      cleanImage.startsWith(
+        "images/products/"
+      )
+    ) {
+      return `/${cleanImage}`;
+    }
+
+    if (
+      cleanImage.startsWith(
+        "/images/products/"
+      )
+    ) {
+      return cleanImage;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FILE NAME ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    return `/images/products/${cleanImage}`;
   };
 
   /*
-  ==========================================================
-  FIND SELECTED CATEGORY
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | SELECTED CATEGORY
+  |--------------------------------------------------------------------------
   */
 
   const selectedCategory =
     categories.find(
       (category) =>
-        String(category.id) ===
-        String(categoryId)
+        String(
+          category.id
+        ) ===
+        String(
+          categoryId
+        )
     );
 
   /*
-  ==========================================================
-  FIND SELECTED SUBCATEGORY
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | SELECTED SUBCATEGORY
+  |--------------------------------------------------------------------------
   */
 
   const selectedSubcategory =
@@ -520,9 +1002,9 @@ function Products() {
     );
 
   /*
-  ==========================================================
-  PAGE
-  ==========================================================
+  |--------------------------------------------------------------------------
+  | PAGE
+  |--------------------------------------------------------------------------
   */
 
   return (
@@ -531,9 +1013,9 @@ function Products() {
 
       <main className="products-page">
 
-        {/* ================================================= */}
-        {/* PAGE HEADER */}
-        {/* ================================================= */}
+        {/* ================================================================
+            PAGE HEADER
+        ================================================================ */}
 
         <section className="products-header">
 
@@ -552,18 +1034,15 @@ function Products() {
                 </h1>
 
                 <p>
-                  Discover products from
-                  different categories and
-                  easily find exactly what
-                  you are looking for.
+                  Discover products from different
+                  categories and easily find exactly
+                  what you are looking for.
                 </p>
 
               </div>
 
               <div className="products-header-icon">
-
                 <FaBoxOpen />
-
               </div>
 
             </div>
@@ -572,35 +1051,27 @@ function Products() {
 
         </section>
 
-
-        {/* ================================================= */}
-        {/* PRODUCT SECTION */}
-        {/* ================================================= */}
+        {/* ================================================================
+            CONTENT
+        ================================================================ */}
 
         <section className="container products-content">
 
           <div className="row g-4">
 
-
-            {/* ================================================= */}
-            {/* LEFT FILTER */}
-            {/* ================================================= */}
+            {/* ============================================================
+                FILTERS
+            ============================================================ */}
 
             <div className="col-12 col-lg-3">
 
               <div className="filter-card">
 
-
-                {/* FILTER HEADER */}
-
                 <div className="filter-title-area">
 
                   <h4>
-
                     <FaFilter className="me-2" />
-
                     Filters
-
                   </h4>
 
                   <p>
@@ -609,17 +1080,15 @@ function Products() {
 
                 </div>
 
-
                 <form
                   onSubmit={
                     handleFilter
                   }
                 >
 
-
-                  {/* ======================================= */}
-                  {/* SEARCH */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      SEARCH
+                  ====================================================== */}
 
                   <div className="filter-group">
 
@@ -639,8 +1108,7 @@ function Products() {
                           event
                         ) =>
                           setSearch(
-                            event.target
-                              .value
+                            event.target.value
                           )
                         }
                       />
@@ -649,24 +1117,23 @@ function Products() {
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* CATEGORY */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      CATEGORY
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-
                       <FaLayerGroup className="me-2" />
-
                       Category
-
                     </label>
 
                     <select
                       value={
                         categoryId
+                      }
+                      disabled={
+                        categoryLoading
                       }
                       onChange={
                         handleCategoryChange
@@ -679,7 +1146,6 @@ function Products() {
 
                       {categories.map(
                         (category) => (
-
                           <option
                             key={
                               category.id
@@ -688,13 +1154,10 @@ function Products() {
                               category.id
                             }
                           >
-
                             {
                               category.name
                             }
-
                           </option>
-
                         )
                       )}
 
@@ -702,140 +1165,109 @@ function Products() {
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* SUBCATEGORY */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      SUBCATEGORY
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-
                       <FaList className="me-2" />
-
                       Subcategory
-
                     </label>
 
+                    <select
+                      value={
+                        subcategoryId
+                      }
+                      disabled={
+                        !categoryId
+                      }
+                      onChange={
+                        handleSubcategoryChange
+                      }
+                    >
 
-                    {/* No Category Selected */}
-
-                    {!categoryId && (
-
-                      <select
-                        disabled
-                        value=""
-                      >
-
+                      {!categoryId ? (
                         <option value="">
-
                           Select a category first
-
                         </option>
+                      ) : (
+                        <>
+                          <option value="">
+                            All Subcategories
+                          </option>
 
-                      </select>
+                          {filteredSubcategories.map(
+                            (
+                              subcategory
+                            ) => (
+                              <option
+                                key={
+                                  subcategory.id
+                                }
+                                value={
+                                  subcategory.id
+                                }
+                              >
+                                {
+                                  subcategory.name
+                                }
+                              </option>
+                            )
+                          )}
+                        </>
+                      )}
 
-                    )}
+                    </select>
 
+                    {/* DEBUG/SAFETY MESSAGE */}
 
-                    {/* Category Selected */}
-
-                    {categoryId && (
-
-                      <select
-                        value={
-                          subcategoryId
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setSubcategoryId(
-                            event.target
-                              .value
-                          )
-                        }
-                      >
-
-                        <option value="">
-
-                          All Subcategories
-
-                        </option>
-
-
-                        {filteredSubcategories.map(
-                          (
-                            subcategory
-                          ) => (
-
-                            <option
-                              key={
-                                subcategory.id
-                              }
-                              value={
-                                subcategory.id
-                              }
-                            >
-
-                              {
-                                subcategory.name
-                              }
-
-                            </option>
-
-                          )
-                        )}
-
-                      </select>
-
-                    )}
+                    {categoryId &&
+                      filteredSubcategories.length ===
+                        0 && (
+                        <small className="text-danger d-block mt-2">
+                          No subcategories found for this category.
+                        </small>
+                      )}
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* BRAND */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      BRAND
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-
                       <FaTag className="me-2" />
-
                       Brand
-
                     </label>
 
                     <input
                       type="text"
-                      placeholder="Example: Apple"
+                      placeholder="Example: Samsung"
                       value={brand}
                       onChange={(
                         event
                       ) =>
                         setBrand(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                     />
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* COLOR */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      COLOR
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-
                       <FaPalette className="me-2" />
-
                       Color
-
                     </label>
 
                     <input
@@ -846,18 +1278,16 @@ function Products() {
                         event
                       ) =>
                         setColor(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                     />
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* SIZE */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      SIZE
+                  ====================================================== */}
 
                   <div className="filter-group">
 
@@ -873,23 +1303,21 @@ function Products() {
                         event
                       ) =>
                         setSize(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                     />
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* PRICE RANGE */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      PRICE
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-                      Price Range
+                      Price Range (Rs.)
                     </label>
 
                     <div className="price-inputs">
@@ -897,8 +1325,8 @@ function Products() {
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        placeholder="Min"
+                        step="1"
+                        placeholder="Min Rs."
                         value={
                           minPrice
                         }
@@ -906,8 +1334,7 @@ function Products() {
                           event
                         ) =>
                           setMinPrice(
-                            event.target
-                              .value
+                            event.target.value
                           )
                         }
                       />
@@ -919,8 +1346,8 @@ function Products() {
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        placeholder="Max"
+                        step="1"
+                        placeholder="Max Rs."
                         value={
                           maxPrice
                         }
@@ -928,8 +1355,7 @@ function Products() {
                           event
                         ) =>
                           setMaxPrice(
-                            event.target
-                              .value
+                            event.target.value
                           )
                         }
                       />
@@ -938,17 +1364,14 @@ function Products() {
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* RATING */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      RATING
+                  ====================================================== */}
 
                   <div className="filter-group">
 
                     <label>
-
                       Minimum Rating
-
                     </label>
 
                     <select
@@ -959,8 +1382,7 @@ function Products() {
                         event
                       ) =>
                         setMinRating(
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                     >
@@ -989,10 +1411,9 @@ function Products() {
 
                   </div>
 
-
-                  {/* ======================================= */}
-                  {/* FILTER BUTTONS */}
-                  {/* ======================================= */}
+                  {/* ======================================================
+                      BUTTONS
+                  ====================================================== */}
 
                   <div className="filter-actions">
 
@@ -1000,13 +1421,9 @@ function Products() {
                       type="submit"
                       className="apply-filter-btn"
                     >
-
                       <FaSearch className="me-2" />
-
                       Apply Filters
-
                     </button>
-
 
                     <button
                       type="button"
@@ -1015,11 +1432,8 @@ function Products() {
                         clearFilters
                       }
                     >
-
                       <FaTimes className="me-2" />
-
                       Clear Filters
-
                     </button>
 
                   </div>
@@ -1030,34 +1444,29 @@ function Products() {
 
             </div>
 
-
-            {/* ================================================= */}
-            {/* RIGHT PRODUCT AREA */}
-            {/* ================================================= */}
+            {/* ============================================================
+                PRODUCTS
+            ============================================================ */}
 
             <div className="col-12 col-lg-9">
 
-
-              {/* ======================================= */}
-              {/* PRODUCT TOP BAR */}
-              {/* ======================================= */}
+              {/* ==========================================================
+                  TOP BAR
+              ========================================================== */}
 
               <div className="products-top-bar">
 
                 <div>
 
                   <h3>
-
                     {selectedSubcategory
                       ? selectedSubcategory.name
                       : selectedCategory
                       ? selectedCategory.name
                       : "All Products"}
-
                   </h3>
 
                   <p>
-
                     {loading
                       ? "Loading products..."
                       : `${products.length} product${
@@ -1066,20 +1475,17 @@ function Products() {
                             ? "s"
                             : ""
                         } found`}
-
                   </p>
 
                 </div>
 
               </div>
 
-
-              {/* ======================================= */}
-              {/* LOADING */}
-              {/* ======================================= */}
+              {/* ==========================================================
+                  LOADING
+              ========================================================== */}
 
               {loading && (
-
                 <div className="product-loading">
 
                   <div
@@ -1092,18 +1498,15 @@ function Products() {
                   </p>
 
                 </div>
-
               )}
 
-
-              {/* ======================================= */}
-              {/* NO PRODUCTS */}
-              {/* ======================================= */}
+              {/* ==========================================================
+                  EMPTY
+              ========================================================== */}
 
               {!loading &&
                 products.length ===
                   0 && (
-
                   <div className="no-products">
 
                     <FaBoxOpen />
@@ -1113,11 +1516,7 @@ function Products() {
                     </h4>
 
                     <p>
-
-                      We could not find
-                      products matching your
-                      selected filters.
-
+                      We could not find products matching your selected filters.
                     </p>
 
                     <button
@@ -1126,28 +1525,23 @@ function Products() {
                         clearFilters
                       }
                     >
-
                       Clear Filters
-
                     </button>
 
                   </div>
-
                 )}
 
-
-              {/* ======================================= */}
-              {/* PRODUCTS GRID */}
-              {/* ======================================= */}
+              {/* ==========================================================
+                  PRODUCT GRID
+              ========================================================== */}
 
               {!loading &&
-                products.length > 0 && (
-
+                products.length >
+                  0 && (
                   <div className="row g-4">
 
                     {products.map(
                       (product) => (
-
                         <div
                           className="col-12 col-md-6 col-xl-4"
                           key={
@@ -1157,34 +1551,31 @@ function Products() {
 
                           <div className="product-card">
 
-
-                            {/* ======================= */}
                             {/* IMAGE */}
-                            {/* ======================= */}
 
                             <div className="product-image-area">
 
                               <img
-                                src={getImageSrc(
-                                  product.image
-                                )}
+                                src={
+                                  getImageSrc(
+                                    product.image
+                                  )
+                                }
                                 alt={
                                   product.name
                                 }
                                 onError={(
                                   event
                                 ) => {
+                                  event.currentTarget.onerror =
+                                    null;
 
                                   event.currentTarget.src =
                                     "/images/products/placeholder.svg";
-
                                 }}
                               />
 
-
-                              {/* ======================= */}
                               {/* WISHLIST */}
-                              {/* ======================= */}
 
                               <button
                                 type="button"
@@ -1202,198 +1593,131 @@ function Products() {
                                   )
                                 }
                               >
-
                                 <FaHeart />
-
                               </button>
 
-
-                              {/* ======================= */}
-                              {/* CATEGORY BADGE */}
-                              {/* ======================= */}
+                              {/* CATEGORY */}
 
                               {product.category && (
-
                                 <span className="category-badge">
-
                                   {
                                     product
                                       .category
                                       .name
                                   }
-
                                 </span>
-
                               )}
 
                             </div>
 
-
-                            {/* ======================= */}
-                            {/* PRODUCT BODY */}
-                            {/* ======================= */}
+                            {/* BODY */}
 
                             <div className="product-card-body">
 
-
-                              {/* BRAND */}
-
                               <div className="product-brand">
-
                                 {product.brand ||
                                   "ShopEase"}
-
                               </div>
 
-
-                              {/* NAME */}
-
                               <h5>
-
                                 {
                                   product.name
                                 }
-
                               </h5>
-
-
-                              {/* RATING */}
 
                               <div className="product-rating">
 
                                 <FaStar />
 
                                 <span>
-
                                   {Number(
                                     product.rating ||
                                       0
                                   ).toFixed(
                                     1
                                   )}
-
                                 </span>
 
                               </div>
 
-
-                              {/* DESCRIPTION */}
-
                               <p className="product-description">
-
                                 {product.description ||
                                   "Quality product available at ShopEase."}
-
                               </p>
 
-
-                              {/* ======================= */}
-                              {/* SUBCATEGORY LABEL */}
-                              {/* ======================= */}
+                              {/* SUBCATEGORY */}
 
                               {product.subcategory && (
-
                                 <div className="product-details-row">
 
                                   <span>
-
                                     {
                                       product
                                         .subcategory
                                         .name
                                     }
-
                                   </span>
 
                                 </div>
-
                               )}
 
-
-                              {/* ======================= */}
-                              {/* COLOR / SIZE */}
-                              {/* ======================= */}
+                              {/* COLOR + SIZE */}
 
                               <div className="product-details-row">
 
                                 {product.color && (
-
                                   <span>
-
                                     Color:{" "}
                                     {
                                       product.color
                                     }
-
                                   </span>
-
                                 )}
 
                                 {product.size && (
-
                                   <span>
-
                                     Size:{" "}
                                     {
                                       product.size
                                     }
-
                                   </span>
-
                                 )}
 
                               </div>
 
-
-                              {/* ======================= */}
                               {/* STOCK */}
-                              {/* ======================= */}
 
                               <div
                                 className={`stock-status ${
-                                  product.stock >
-                                  0
+                                  Number(
+                                    product.stock
+                                  ) > 0
                                     ? "in-stock"
                                     : "out-stock"
                                 }`}
                               >
-
-                                {product.stock >
-                                0
+                                {Number(
+                                  product.stock
+                                ) > 0
                                   ? `${product.stock} in stock`
                                   : "Out of stock"}
-
                               </div>
 
-
-                              {/* ======================= */}
-                              {/* PRICE / DETAILS */}
-                              {/* ======================= */}
+                              {/* PRICE */}
 
                               <div className="product-card-bottom">
 
                                 <div className="product-price">
-
-                                  <span>
-                                    $
-                                  </span>
-
-                                  {Number(
+                                  {formatPrice(
                                     product.price
-                                  ).toFixed(
-                                    2
                                   )}
-
                                 </div>
-
 
                                 <Link
                                   to={`/products/${product.id}`}
                                   className="view-product-btn"
                                 >
-
                                   View Details
-
                                 </Link>
 
                               </div>
@@ -1403,12 +1727,10 @@ function Products() {
                           </div>
 
                         </div>
-
                       )
                     )}
 
                   </div>
-
                 )}
 
             </div>
@@ -1420,7 +1742,6 @@ function Products() {
       </main>
 
       <Footer />
-
     </>
   );
 }
