@@ -42,4 +42,21 @@ class PasswordRecoveryTest extends TestCase
         $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
     }
+
+    public function test_local_log_mailer_returns_a_development_reset_link(): void
+    {
+        Notification::fake();
+        $this->app->instance('env', 'local');
+        config(['mail.default' => 'log']);
+        $user = User::factory()->create();
+
+        $response = $this->postJson('/api/forgot-password', ['email' => $user->email])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['reset_url']);
+
+        $this->assertStringContainsString('/reset-password?token=', $response->json('reset_url'));
+        $this->assertStringContainsString(urlencode($user->email), $response->json('reset_url'));
+        Notification::assertNothingSent();
+    }
 }

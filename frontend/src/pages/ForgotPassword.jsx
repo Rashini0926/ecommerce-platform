@@ -6,15 +6,23 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [resetUrl, setResetUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
     setError("");
+    setMessage("");
+    setResetUrl("");
+    setIsSubmitting(true);
     try {
       const response = await requestPasswordReset(email);
       setMessage(response.message);
+      setResetUrl(response.reset_url || "");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to send the reset link.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -22,11 +30,12 @@ export default function ForgotPassword() {
     <h1 className="h3">Forgot password?</h1>
     <p className="text-muted">Enter your account email to receive a reset link.</p>
     {message && <div className="alert alert-success">{message}</div>}
+    {resetUrl && <div className="alert alert-info"><strong>Local development:</strong> Email delivery is disabled. <a href={resetUrl} className="alert-link">Continue to reset your password</a>.</div>}
     {error && <div className="alert alert-danger">{error}</div>}
     <form onSubmit={submit} className="card card-body shadow-sm">
       <label className="form-label" htmlFor="email">Email address</label>
       <input id="email" className="form-control mb-3" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <button className="btn btn-primary">Send reset link</button>
+      <button className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? "Creating link..." : "Send reset link"}</button>
     </form>
     <Link className="d-inline-block mt-3" to="/login">Back to login</Link>
   </main>;

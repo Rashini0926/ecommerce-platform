@@ -74,16 +74,35 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => ['required', 'email']]);
+        $credentials = $request->validate(['email' => ['required', 'email']]);
+        $resetUrl = null;
 
-        $status = Password::sendResetLink($request->only('email'));
+        if (app()->environment('local') && config('mail.default') === 'log') {
+            $status = Password::sendResetLink(
+                $credentials,
+                function (User $user, string $token) use (&$resetUrl): void {
+                    $resetUrl = rtrim(config('app.frontend_url'), '/')
+                        . '/reset-password?token=' . $token
+                        . '&email=' . urlencode($user->email);
+                }
+            );
+        } else {
+            $status = Password::sendResetLink($credentials);
+        }
 
-        return response()->json([
-            'success' => $status === Password::RESET_LINK_SENT,
-            'message' => $status === Password::RESET_LINK_SENT
-                ? 'Password reset link sent. Check the configured mail inbox or Laravel log.'
+        $successful = $status === Password::RESET_LINK_SENT;
+        $response = [
+            'success' => $successful,
+            'message' => $successful
+                ? ($resetUrl ? 'Reset link created for local development.' : 'Password reset link sent. Check your email inbox.')
                 : 'Unable to send a password reset link for that email address.',
-        ], $status === Password::RESET_LINK_SENT ? 200 : 422);
+        ];
+
+        if ($resetUrl) {
+            $response['reset_url'] = $resetUrl;
+        }
+
+        return response()->json($response, $successful ? 200 : 422);
     }
 
     public function resetPassword(Request $request)
