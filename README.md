@@ -204,6 +204,16 @@ GET    /api/admin/reports/summary
 GET    /api/seller/reports/summary
 ```
 
+Admin and seller report endpoints accept optional `from` and `to` query parameters in
+`YYYY-MM-DD` format. The default period is the latest 30 days and the maximum reporting
+window is 366 days. Revenue metrics include paid orders only.
+
+Example:
+
+```text
+GET /api/admin/reports/summary?from=2026-09-01&to=2026-09-30
+```
+
 ---
 
 ## Testing
