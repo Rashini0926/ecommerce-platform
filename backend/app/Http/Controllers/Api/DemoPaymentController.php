@@ -6,7 +6,7 @@ use App\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\UserNotification;
+use App\Services\Notifications\CustomerNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class DemoPaymentController extends Controller
 {
-    public function __construct(private PaymentGateway $gateway) {}
+    public function __construct(
+        private PaymentGateway $gateway,
+        private CustomerNotificationService $notifications,
+    ) {}
 
     public function initiate(Request $request, Order $order): JsonResponse
     {
@@ -75,20 +78,17 @@ class DemoPaymentController extends Controller
             ]);
             $lockedOrder->update(['payment_status' => 'PAID']);
 
-            UserNotification::create([
-                'user_id' => $lockedOrder->user_id,
-                'type' => 'PAYMENT',
-                'title' => 'Payment received',
-                'message' => "Your demo card payment for order {$lockedOrder->order_number} was completed successfully.",
-                'data' => [
-                    'order_id' => $lockedOrder->id,
-                    'order_number' => $lockedOrder->order_number,
-                    'payment_reference' => $payment->reference,
-                ],
-            ]);
-
             return [$payment->fresh(), $lockedOrder->fresh(), true];
         });
+
+        if ($wasCompleted) {
+            $this->notifications->sendOrderUpdate(
+                $paidOrder,
+                'PAYMENT',
+                'Payment received',
+                "Your demo card payment for order {$paidOrder->order_number} was completed successfully.",
+            );
+        }
 
         return response()->json([
             'success' => true,

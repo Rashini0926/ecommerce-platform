@@ -3,22 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\OrderUpdateMail;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\UserNotification;
+use App\Services\Notifications\CustomerNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    public function __construct(private CustomerNotificationService $notifications) {}
+
     private const STATUS_TRANSITIONS = [
         'PENDING' => ['PROCESSING', 'CANCELLED'],
         'PROCESSING' => ['SHIPPED', 'CANCELLED'],
@@ -277,6 +277,8 @@ class OrderController extends Controller
             $order->update(['order_status' => 'CANCELLED']);
         });
 
+        $this->notifyCustomer($order, 'ORDER_STATUS', 'Order cancelled', "Your order {$order->order_number} was cancelled successfully.");
+
         return response()->json([
             'success' => true,
             'message' => 'Order cancelled successfully.',
@@ -341,15 +343,6 @@ class OrderController extends Controller
 
     private function notifyCustomer(Order $order, string $type, string $title, string $message): void
     {
-        UserNotification::create([
-            'user_id' => $order->user_id,
-            'type' => $type,
-            'title' => $title,
-            'message' => $message,
-            'data' => ['order_id' => $order->id, 'order_number' => $order->order_number],
-        ]);
-
-        $order->loadMissing('user');
-        Mail::to($order->user->email)->queue(new OrderUpdateMail($order, $title, $message));
+        $this->notifications->sendOrderUpdate($order, $type, $title, $message);
     }
 }

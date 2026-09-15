@@ -111,6 +111,22 @@ php artisan serve
 
 Backend runs at `http://127.0.0.1:8000`.
 
+### 6. Run the queue worker
+
+Keep a second backend terminal open so queued email notifications are processed:
+
+```bash
+php artisan queue:work
+```
+
+Local email output is written through Laravel's `log` mailer. SMS messages use the safe demo log provider by default, so no external credentials or real messages are required.
+
+```env
+ORDER_EMAIL_NOTIFICATIONS=true
+ORDER_SMS_NOTIFICATIONS=true
+SMS_DRIVER=log
+```
+
 ---
 
 ## Demo Accounts
@@ -151,6 +167,13 @@ Backend runs at `http://127.0.0.1:8000`.
 - Payment transaction status tracking
 - Courier, tracking number and shipping status management
 
+### Notifications
+
+- In-app order, payment and shipping notifications
+- Queued email notifications with delivery status tracking
+- Demo SMS notifications with masked phone numbers in application logs
+- Per-channel delivery audit records for queued, sent, failed and skipped messages
+
 ---
 
 ## Important API Endpoints
@@ -170,8 +193,12 @@ GET    /api/cart
 POST   /api/cart
 POST   /api/orders
 GET    /api/orders/{id}/tracking
+POST   /api/orders/{id}/payment/initiate
+POST   /api/orders/{id}/payment/complete
 
 GET    /api/notifications
+PATCH  /api/notifications/{id}/read
+PATCH  /api/notifications/read-all
 GET    /api/admin/users
 GET    /api/admin/reports/summary
 GET    /api/seller/reports/summary

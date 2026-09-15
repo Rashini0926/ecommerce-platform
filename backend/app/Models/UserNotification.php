@@ -12,4 +12,9 @@ class UserNotification extends Model
     {
         return ['data' => 'array', 'read_at' => 'datetime'];
     }
+
+    public function deliveries()
+    {
+        return $this->hasMany(NotificationDelivery::class);
+    }
 }
