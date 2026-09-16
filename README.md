@@ -223,8 +223,12 @@ cd backend
 php artisan test
 
 cd ../frontend
+npm test
 npm run build
 ```
+
+The frontend test suite uses Vitest, Testing Library, and jsdom to verify protected-route
+authorization, report date utilities, and responsive analytics widgets.
 
 ---
 
