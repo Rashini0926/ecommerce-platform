@@ -11,6 +11,11 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $attributes = [
+        'role' => 'CUSTOMER',
+        'status' => 'ACTIVE',
+    ];
+
     protected $fillable = [
         'full_name',
         'email',
@@ -61,5 +66,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserNotification::class);
     }
-    public function addresses() { return $this->hasMany(Address::class); }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
+    }
 }

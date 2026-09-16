@@ -25,12 +25,18 @@ function AdminOrders() {
   const [updatingId, setUpdatingId] = useState(null);
   const [shippingOrder, setShippingOrder] = useState(null);
   const [shippingForm, setShippingForm] = useState({ courier_name: "", tracking_number: "", shipping_fee: "0" });
+  const [filters, setFilters] = useState({ search: "", order_status: "", payment_status: "" });
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const response = await getAdminOrders(token);
+        setIsLoading(true);
+        const response = await getAdminOrders(token, { ...appliedFilters, page });
         setOrders(response.orders || []);
+        setMeta(response.meta || { current_page: 1, last_page: 1, total: response.orders?.length || 0 });
       } catch (error) {
         showToast(error.response?.data?.message || "Could not load platform orders.", "danger");
       } finally {
@@ -38,7 +44,20 @@ function AdminOrders() {
       }
     };
     loadOrders();
-  }, [showToast, token]);
+  }, [appliedFilters, page, showToast, token]);
+
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setPage(1);
+    setAppliedFilters({ ...filters });
+  };
+
+  const clearFilters = () => {
+    const emptyFilters = { search: "", order_status: "", payment_status: "" };
+    setFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
+    setPage(1);
+  };
 
   const replaceOrder = (updatedOrder) => setOrders((current) => current.map((item) => item.id === updatedOrder.id ? updatedOrder : item));
 
@@ -91,7 +110,18 @@ function AdminOrders() {
         <Link to="/admin/dashboard" className="btn btn-outline-danger">Admin Dashboard</Link>
       </div>
 
-      {isLoading ? <LoadingSpinner text="Loading platform orders" /> : !orders.length ? <div className="card shadow-sm border-0 text-center p-5"><h2 className="h4">No orders yet</h2><p className="text-muted mb-0">New customer orders will appear here.</p></div> : <div className="card shadow-sm border-0"><div className="table-responsive"><table className="table align-middle mb-0">
+      <form className="card border-0 shadow-sm mb-4" onSubmit={applyFilters}>
+        <div className="card-body p-3 p-lg-4">
+          <div className="row g-3 align-items-end">
+            <div className="col-lg-5"><label className="form-label" htmlFor="order-search">Search orders</label><input id="order-search" className="form-control" placeholder="Order number, customer, or email" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} /></div>
+            <div className="col-sm-6 col-lg-2"><label className="form-label" htmlFor="order-status">Order status</label><select id="order-status" className="form-select" value={filters.order_status} onChange={(event) => setFilters({ ...filters, order_status: event.target.value })}><option value="">All statuses</option><option value="PROCESSING">Processing</option><option value="SHIPPED">Shipped</option><option value="DELIVERED">Delivered</option><option value="CANCELLED">Cancelled</option></select></div>
+            <div className="col-sm-6 col-lg-2"><label className="form-label" htmlFor="payment-status">Payment</label><select id="payment-status" className="form-select" value={filters.payment_status} onChange={(event) => setFilters({ ...filters, payment_status: event.target.value })}><option value="">All payments</option><option value="PENDING">Pending</option><option value="PAID">Paid</option></select></div>
+            <div className="col-lg-3 d-flex gap-2"><button className="btn btn-primary flex-grow-1">Apply filters</button><button className="btn btn-outline-secondary" onClick={clearFilters} type="button">Clear</button></div>
+          </div>
+        </div>
+      </form>
+
+      {isLoading ? <LoadingSpinner text="Loading platform orders" /> : !orders.length ? <div className="card shadow-sm border-0 text-center p-5"><h2 className="h4">No matching orders</h2><p className="text-muted mb-0">Try changing the filters or wait for new orders.</p></div> : <><div className="card shadow-sm border-0"><div className="card-header bg-transparent border-0 px-4 pt-4"><small className="text-muted">{meta.total} order{meta.total === 1 ? "" : "s"} found</small></div><div className="table-responsive"><table className="table align-middle mb-0">
         <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Payment</th><th>Shipping</th><th>Total</th><th>Status</th></tr></thead>
         <tbody>{orders.map((order) => <tr key={order.id}>
           <td><strong>{order.order_number}</strong><small className="d-block text-muted">{new Date(order.created_at).toLocaleDateString("en-LK")}</small></td>
@@ -102,7 +132,7 @@ function AdminOrders() {
           <td><strong>{formatPrice(order.total_amount)}</strong></td>
           <td><select className="form-select form-select-sm" disabled={updatingId === order.id || statusOptionsFor(order).length === 1} value={order.order_status} onChange={(event) => changeStatus(order, event.target.value)}>{statusOptionsFor(order).map((status) => <option value={status} key={status}>{status}</option>)}</select></td>
         </tr>)}</tbody>
-      </table></div></div>}
+      </table></div></div>{meta.last_page > 1 && <nav className="d-flex justify-content-center align-items-center gap-3 mt-4" aria-label="Order pages"><button className="btn btn-outline-primary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Previous</button><span className="text-muted small">Page {meta.current_page} of {meta.last_page}</span><button className="btn btn-outline-primary" disabled={page >= meta.last_page} onClick={() => setPage((current) => current + 1)}>Next</button></nav>}</>}
     </main>
 
     {shippingOrder && <div className="modal d-block" role="dialog" aria-modal="true"><div className="modal-dialog modal-dialog-centered"><form className="modal-content shadow" onSubmit={submitShipping}>

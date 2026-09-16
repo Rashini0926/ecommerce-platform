@@ -4,6 +4,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { getOrder, getOrderTracking } from "../services/orderService";
+import { productImageSource, useProductImageFallback } from "../utils/productImage";
 
 const stages = ["PROCESSING", "SHIPPED", "DELIVERED"];
 const formatPrice = (amount) => `Rs. ${Number(amount || 0).toLocaleString("en-LK")}`;
@@ -63,7 +64,7 @@ function OrderDetails() {
             {(tracking?.courier_name || tracking?.tracking_number) && <div className="alert alert-light border mt-4 mb-0"><div className="fw-semibold mb-1">Shipment information</div>{tracking.courier_name && <div>Courier: {tracking.courier_name}</div>}{tracking.tracking_number && <div>Tracking number: <strong>{tracking.tracking_number}</strong></div>}<small className="text-muted d-block mt-2">Shipped: {formatDate(tracking.shipped_at)} · Delivered: {formatDate(tracking.delivered_at)}</small></div>}
           </>}
         </div></section>
-        <section className="card shadow-sm border-0"><div className="card-body p-4"><h2 className="h5 mb-4">Items ordered</h2>{order.items.map((item) => <div className="d-flex align-items-center gap-3 border-bottom pb-3 mb-3" key={item.id}><img className="rounded object-fit-cover" width="72" height="72" src={item.product?.image || "https://via.placeholder.com/72?text=Product"} alt={item.product_name} /><div className="flex-grow-1"><h3 className="h6 mb-1">{item.product_name}</h3><small className="text-muted">{formatPrice(item.unit_price)} × {item.quantity}</small></div><strong>{formatPrice(item.subtotal)}</strong></div>)}</div></section>
+        <section className="card shadow-sm border-0"><div className="card-body p-4"><h2 className="h5 mb-4">Items ordered</h2>{order.items.map((item) => <div className="d-flex align-items-center gap-3 border-bottom pb-3 mb-3" key={item.id}><img className="rounded object-fit-cover" width="72" height="72" src={productImageSource(item.product?.image)} onError={useProductImageFallback} alt={item.product_name} /><div className="flex-grow-1"><h3 className="h6 mb-1">{item.product_name}</h3><small className="text-muted">{formatPrice(item.unit_price)} × {item.quantity}</small></div><strong>{formatPrice(item.subtotal)}</strong></div>)}</div></section>
       </div>
       <aside className="col-lg-4">
         <section className="card shadow-sm border-0 mb-4"><div className="card-body p-4"><h2 className="h5 mb-3">Payment summary</h2><div className="d-flex justify-content-between mb-2"><span>Method</span><strong>{order.payment_method === "CARD" ? "Card (Demo)" : "Cash on Delivery"}</strong></div><div className="d-flex justify-content-between mb-3"><span>Payment</span><strong className={order.payment_status === "PAID" ? "text-success" : "text-warning"}>{order.payment_status}</strong></div><hr /><div className="d-flex justify-content-between"><strong>Total</strong><strong className="text-primary">{formatPrice(order.total_amount)}</strong></div></div></section>

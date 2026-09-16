@@ -32,7 +32,7 @@ class ProductController extends Controller
             throw ValidationException::withMessages(['max_price' => 'The maximum price must be greater than or equal to the minimum price.']);
         }
 
-        $query = Product::with(['category', 'subcategory', 'seller:id,full_name']);
+        $query = Product::visibleToCustomers()->with(['category', 'subcategory', 'seller:id,full_name']);
         $effectivePrice = '(price * (1 - discount_percentage / 100.0))';
 
         if (! empty($filters['search'])) {
@@ -100,6 +100,7 @@ class ProductController extends Controller
     public function homepage(): JsonResponse
     {
         $catalogue = Product::query()
+            ->visibleToCustomers()
             ->with(['category', 'subcategory', 'seller:id,full_name'])
             ->where('stock', '>', 0);
 
@@ -136,6 +137,7 @@ class ProductController extends Controller
 
     public function show(Product $product): JsonResponse
     {
+        abort_unless($product->isVisibleToCustomers(), 404);
         $product->load(['category', 'subcategory', 'seller:id,full_name']);
 
         return response()->json($product);
@@ -143,6 +145,8 @@ class ProductController extends Controller
 
     public function mine(Request $request): JsonResponse
     {
+        $this->ensureSeller($request);
+
         return response()->json($request->user()->products()->with(['category', 'subcategory'])->latest()->get());
     }
 

@@ -59,4 +59,16 @@ class PasswordRecoveryTest extends TestCase
         $this->assertStringContainsString(urlencode($user->email), $response->json('reset_url'));
         Notification::assertNothingSent();
     }
+
+    public function test_password_reset_request_does_not_reveal_unknown_accounts(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/forgot-password', ['email' => 'unknown@example.com'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonMissingPath('reset_url');
+
+        Notification::assertNothingSent();
+    }
 }

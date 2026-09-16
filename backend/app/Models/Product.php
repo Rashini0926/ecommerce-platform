@@ -46,6 +46,19 @@ class Product extends Model
         return round((float) $this->price * $discountMultiplier, 2);
     }
 
+    public function scopeVisibleToCustomers($query)
+    {
+        return $query->where(function ($visibilityQuery): void {
+            $visibilityQuery->whereNull('user_id')
+                ->orWhereHas('seller', fn ($sellerQuery) => $sellerQuery->where('status', 'ACTIVE'));
+        });
+    }
+
+    public function isVisibleToCustomers(): bool
+    {
+        return ! $this->user_id || $this->seller()->where('status', 'ACTIVE')->exists();
+    }
+
     public function category()
     {
         return $this->belongsTo(

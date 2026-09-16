@@ -1,4 +1,5 @@
 import { FaHeart, FaShoppingCart, FaTrash } from "react-icons/fa";
+import { productImageSource, useProductImageFallback } from "../../utils/productImage";
 
 function WishlistCard({
   item,
@@ -12,8 +13,9 @@ function WishlistCard({
     <div className="card wishlist-card hover-lift card-hover-shadow h-100">
       <div className="product-image-wrap position-relative">
         <img
-          src={product?.image || "https://via.placeholder.com/400x300?text=Product"}
+          src={productImageSource(product?.image)}
           alt={product?.name || "Product"}
+          onError={useProductImageFallback}
           className="wishlist-image"
         />
 
@@ -31,7 +33,7 @@ function WishlistCard({
         <h5>{product?.name}</h5>
 
         <h4 className="text-primary">
-          Rs. {Number(product?.price || 0).toLocaleString()}
+          Rs. {Number(product?.sale_price ?? product?.price ?? 0).toLocaleString()}
         </h4>
 
         <div className="d-grid gap-2 mt-auto">

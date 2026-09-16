@@ -57,6 +57,7 @@ class OrderController extends Controller
             $totalAmount = 0;
             $orderItems = [];
             $products = Product::whereIn('id', $cartItems->pluck('product_id'))
+                ->visibleToCustomers()
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
@@ -76,6 +77,7 @@ class OrderController extends Controller
                 $totalAmount += $subtotal;
                 $orderItems[] = [
                     'product_id' => $product->id,
+                    'seller_id' => $product->user_id,
                     'product_name' => $product->name,
                     'unit_price' => $unitPrice,
                     'quantity' => $cartItem->quantity,
@@ -132,14 +134,48 @@ class OrderController extends Controller
     {
         $this->ensureAdmin($request);
 
-        $orders = Order::with([
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'order_status' => ['nullable', Rule::in(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
+            'payment_status' => ['nullable', Rule::in(['PENDING', 'PAID'])],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'between:1,50'],
+        ]);
+
+        $query = Order::with([
             'items.product',
             'user:id,full_name,email,phone',
-        ])->latest()->get();
+        ]);
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($builder) use ($search): void {
+                $builder->where('order_number', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery
+                        ->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%"));
+            });
+        }
+
+        if (! empty($filters['order_status'])) {
+            $query->where('order_status', $filters['order_status']);
+        }
+
+        if (! empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        $orders = $query->latest()->paginate($filters['per_page'] ?? 15);
 
         return response()->json([
             'success' => true,
-            'orders' => $orders,
+            'orders' => $orders->items(),
+            'meta' => [
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ],
         ]);
     }
 
@@ -169,6 +205,10 @@ class OrderController extends Controller
                 'order_status' => $validated['order_status'],
                 'delivered_at' => $validated['order_status'] === 'DELIVERED' ? ($order->delivered_at ?? now()) : $order->delivered_at,
             ]);
+
+            if ($validated['order_status'] === 'SHIPPED') {
+                $order->items()->update(['fulfillment_status' => 'SHIPPED']);
+            }
         });
 
         if ($previousStatus !== $validated['order_status']) {
@@ -200,11 +240,14 @@ class OrderController extends Controller
             'shipping_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $order->update([
-            ...$data,
-            'order_status' => 'SHIPPED',
-            'shipped_at' => $order->shipped_at ?? now(),
-        ]);
+        DB::transaction(function () use ($order, $data): void {
+            $order->update([
+                ...$data,
+                'order_status' => 'SHIPPED',
+                'shipped_at' => $order->shipped_at ?? now(),
+            ]);
+            $order->items()->update(['fulfillment_status' => 'SHIPPED']);
+        });
         $this->notifyCustomer($order, 'SHIPPING', 'Your order has shipped', "Your order {$order->order_number} is with {$data['courier_name']}. Tracking number: {$data['tracking_number']}.");
 
         return response()->json([

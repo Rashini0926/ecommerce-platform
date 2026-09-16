@@ -276,13 +276,13 @@ export default function SellerDashboard() {
                             <td>
                               <select
                                 className="form-select form-select-sm"
-                                disabled={updatingId === item.id || item.fulfillment_status === "SHIPPED"}
+                                disabled={updatingId === item.id || item.fulfillment_status !== "PROCESSING"}
                                 onChange={(event) => updateFulfillment(item, event.target.value)}
                                 value={item.fulfillment_status}
                               >
                                 <option value="PROCESSING">PROCESSING</option>
                                 <option value="READY_TO_SHIP">READY TO SHIP</option>
-                                <option value="SHIPPED">SHIPPED</option>
+                                {item.fulfillment_status === "SHIPPED" && <option value="SHIPPED">SHIPPED BY ADMIN</option>}
                               </select>
                             </td>
                             <td className="text-end fw-semibold">{formatReportCurrency(item.subtotal)}</td>

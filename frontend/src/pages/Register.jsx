@@ -209,9 +209,14 @@ function Register() {
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
+                          minLength="8"
+                          pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                          title="Use at least 8 characters with uppercase, lowercase, and a number."
                           required
                         />
                       </div>
+
+                      <p className="text-muted small mb-3">Use at least 8 characters with uppercase, lowercase, and a number.</p>
 
                       <div className="input-group mb-3">
                         <span className="input-group-text">

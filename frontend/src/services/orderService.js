@@ -36,8 +36,11 @@ export const cancelOrder = async (token, orderId) => {
   return response.data;
 };
 
-export const getAdminOrders = async (token) => {
-  const response = await api.get("/admin/orders", authConfig(token));
+export const getAdminOrders = async (token, params = {}) => {
+  const response = await api.get("/admin/orders", {
+    ...authConfig(token),
+    params,
+  });
 
   return response.data;
 };

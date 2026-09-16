@@ -144,20 +144,23 @@ SMS_DRIVER=log
 ### Authentication and customer features
 
 - Registration, login, logout, password recovery
+- Seller approval workflow without issuing tokens to pending accounts
+- Active-account enforcement and stronger password validation
 - Profile update and password change
 - Saved delivery addresses
 - Product browsing, search, filters, cart, wishlist, checkout
-- Orders, delivery tracking, reviews and notifications
+- Real-time customer dashboard, orders, delivery tracking, reviews and notifications
 
 ### Seller features
 
 - Product CRUD and inventory management
-- Seller fulfillment queue
+- Payment-aware seller fulfillment queue with historical seller ownership
 - Seller analytics summary
 
 ### Admin features
 
 - Order and shipping management
+- Searchable and paginated order management
 - User management, seller approval and account suspension
 - Category management and analytics summary
 
@@ -184,6 +187,8 @@ POST   /api/login
 POST   /api/forgot-password
 POST   /api/reset-password
 GET    /api/profile
+GET    /api/account/summary
+GET    /api/customer/dashboard
 PATCH  /api/profile
 PATCH  /api/profile/password
 
@@ -229,6 +234,10 @@ npm run build
 
 The frontend test suite uses Vitest, Testing Library, and jsdom to verify protected-route
 authorization, report date utilities, and responsive analytics widgets.
+
+React routes are lazy-loaded into page-level chunks to reduce the initial application bundle.
+Backend feature tests cover authentication, authorization, inventory, checkout, payments,
+shipping, notifications, reviews, reporting, and seller fulfillment.
 
 ---
 

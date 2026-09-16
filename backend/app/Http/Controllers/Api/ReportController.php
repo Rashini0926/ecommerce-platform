@@ -69,7 +69,7 @@ class ReportController extends Controller
 
     public function sellerSummary(Request $request): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['SELLER', 'ADMIN'], true), 403, 'Seller access is required.');
+        abort_unless($request->user()->role === 'SELLER', 403, 'Seller access is required.');
         [$from, $to] = $this->reportPeriod($request);
         $sellerId = $request->user()->id;
 
@@ -99,7 +99,7 @@ class ReportController extends Controller
 
         $sellerOrdersQuery = Order::query()
             ->whereBetween('created_at', [$from, $to])
-            ->whereHas('items.product', fn (Builder $query) => $query->where('user_id', $sellerId));
+            ->whereHas('items', fn (Builder $query) => $query->where('seller_id', $sellerId));
 
         return response()->json([
             'success' => true,
@@ -216,7 +216,7 @@ class ReportController extends Controller
     private function sellerItemsQuery(int $sellerId): Builder
     {
         return OrderItem::query()
-            ->whereHas('product', fn (Builder $query) => $query->where('user_id', $sellerId));
+            ->where('seller_id', $sellerId);
     }
 
     private function ensureAdmin(Request $request): void

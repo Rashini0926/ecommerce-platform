@@ -55,7 +55,7 @@ function Cart() {
     () =>
       cart.reduce(
         (sum, item) =>
-          sum + Number(item.product?.price || 0) * item.quantity,
+          sum + Number(item.product?.sale_price ?? item.product?.price ?? 0) * item.quantity,
         0
       ),
     [cart]

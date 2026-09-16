@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -19,7 +20,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:15',
             'role' => 'required|in:customer,seller',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         $user = User::create([
@@ -31,11 +32,15 @@ class AuthController extends Controller
             'status' => $validated['role'] === 'seller' ? 'PENDING' : 'ACTIVE',
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $requiresApproval = $user->status === 'PENDING';
+        $token = $requiresApproval ? null : $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful.',
+            'message' => $requiresApproval
+                ? 'Seller application submitted. You can log in after administrator approval.'
+                : 'Registration successful.',
+            'requires_approval' => $requiresApproval,
             'token' => $token,
             'user' => $user,
         ], 201);
@@ -51,7 +56,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid email or password.',
@@ -78,31 +83,30 @@ class AuthController extends Controller
         $resetUrl = null;
 
         if (app()->environment('local') && config('mail.default') === 'log') {
-            $status = Password::sendResetLink(
+            Password::sendResetLink(
                 $credentials,
                 function (User $user, string $token) use (&$resetUrl): void {
                     $resetUrl = rtrim(config('app.frontend_url'), '/')
-                        . '/reset-password?token=' . $token
-                        . '&email=' . urlencode($user->email);
+                        .'/reset-password?token='.$token
+                        .'&email='.urlencode($user->email);
                 }
             );
         } else {
-            $status = Password::sendResetLink($credentials);
+            Password::sendResetLink($credentials);
         }
 
-        $successful = $status === Password::RESET_LINK_SENT;
         $response = [
-            'success' => $successful,
-            'message' => $successful
-                ? ($resetUrl ? 'Reset link created for local development.' : 'Password reset link sent. Check your email inbox.')
-                : 'Unable to send a password reset link for that email address.',
+            'success' => true,
+            'message' => $resetUrl
+                ? 'Reset link created for local development.'
+                : 'If an account exists for that email address, a password reset link has been sent.',
         ];
 
         if ($resetUrl) {
             $response['reset_url'] = $resetUrl;
         }
 
-        return response()->json($response, $successful ? 200 : 422);
+        return response()->json($response);
     }
 
     public function resetPassword(Request $request)
@@ -110,7 +114,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         $status = Password::reset($credentials, function (User $user, string $password) {
@@ -144,6 +148,7 @@ class AuthController extends Controller
             'phone' => ['required', 'string', 'max:20'],
         ]);
         $request->user()->update($data);
+
         return response()->json(['success' => true, 'message' => 'Profile updated successfully.', 'user' => $request->user()->fresh()]);
     }
 
@@ -151,13 +156,14 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
-        if (!Hash::check($data['current_password'], $request->user()->password)) {
+        if (! Hash::check($data['current_password'], $request->user()->password)) {
             return response()->json(['success' => false, 'message' => 'Current password is incorrect.'], 422);
         }
         $request->user()->update(['password' => $data['password']]);
         $request->user()->tokens()->delete();
+
         return response()->json(['success' => true, 'message' => 'Password changed. Please log in again.']);
     }
 

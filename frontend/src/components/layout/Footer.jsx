@@ -1,8 +1,4 @@
 import {
-  FaFacebookF,
-  FaInstagram,
-  FaLinkedinIn,
-  FaTwitter,
   FaPhoneAlt,
   FaEnvelope,
   FaMapMarkerAlt,
@@ -26,7 +22,7 @@ function Footer() {
 
             <span className="badge badge-soft-primary mt-2">
               <FaShieldAlt className="me-2" />
-              Buyer protection included
+              Secure academic demo checkout
             </span>
           </div>
 
@@ -64,10 +60,10 @@ function Footer() {
             <h5 className="mb-3 text-white">Customer Service</h5>
 
             <ul className="list-unstyled">
-              <li className="mb-2">Help Center</li>
-              <li className="mb-2">Privacy Policy</li>
-              <li className="mb-2">Terms & Conditions</li>
-              <li className="mb-2">Return Policy</li>
+              <li className="mb-2">Order tracking</li>
+              <li className="mb-2">Saved delivery addresses</li>
+              <li className="mb-2">Verified product reviews</li>
+              <li className="mb-2">Account notifications</li>
             </ul>
           </div>
 
@@ -88,24 +84,6 @@ function Footer() {
               <FaEnvelope className="me-2 text-primary" />
               support@shopease.com
             </p>
-
-            <div className="mt-3">
-              <a href="#" className="social-link me-2" aria-label="Facebook">
-                <FaFacebookF size={18} />
-              </a>
-
-              <a href="#" className="social-link me-2" aria-label="Instagram">
-                <FaInstagram size={18} />
-              </a>
-
-              <a href="#" className="social-link me-2" aria-label="Twitter">
-                <FaTwitter size={18} />
-              </a>
-
-              <a href="#" className="social-link" aria-label="LinkedIn">
-                <FaLinkedinIn size={18} />
-              </a>
-            </div>
           </div>
         </div>
 

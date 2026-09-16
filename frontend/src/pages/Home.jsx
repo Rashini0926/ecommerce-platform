@@ -6,7 +6,6 @@ import FeaturedProducts from "../components/home/FeaturedProducts";
 import FlashDeals from "../components/home/FlashDeals";
 import BestSellers from "../components/home/BestSellers";
 import WhyChooseUs from "../components/home/WhyChooseUs";
-import Newsletter from "../components/home/Newsletter";
 import Footer from "../components/layout/Footer";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -73,8 +72,6 @@ function Home() {
       <BestSellers products={sections.best_sellers} loading={loading} addingId={addingId} onAdd={addProduct} />
 
       <WhyChooseUs />
-
-      <Newsletter />
 
       <Footer />
     </>

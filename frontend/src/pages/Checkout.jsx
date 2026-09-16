@@ -6,6 +6,7 @@ import { useToast } from "../context/ToastContext";
 import { getCart } from "../services/customerService";
 import { createOrder } from "../services/orderService";
 import api from "../utils/api";
+import { productImageSource, useProductImageFallback } from "../utils/productImage";
 
 const formatPrice = (amount) => `Rs. ${Number(amount || 0).toLocaleString("en-LK")}`;
 
@@ -120,7 +121,7 @@ function Checkout() {
         </div></div>
       </div>
       <div className="col-lg-5"><div className="card shadow-sm border-0 sticky-top" style={{ top: "90px" }}><div className="card-body p-4"><h4 className="mb-4">Order Summary</h4>
-        {cartItems.map((item) => <div key={item.id} className="d-flex align-items-center mb-3"><img className="rounded me-3 object-fit-cover" width="64" height="64" src={item.product?.image || "https://via.placeholder.com/64?text=Product"} alt="" /><div className="flex-grow-1"><h6 className="mb-1">{item.product?.name}</h6><small className="text-muted">Quantity: {item.quantity}</small></div><strong>{formatPrice(Number(item.product?.sale_price ?? item.product?.price ?? 0) * item.quantity)}</strong></div>)}
+        {cartItems.map((item) => <div key={item.id} className="d-flex align-items-center mb-3"><img className="rounded me-3 object-fit-cover" width="64" height="64" src={productImageSource(item.product?.image)} onError={useProductImageFallback} alt={item.product?.name || "Product"} /><div className="flex-grow-1"><h6 className="mb-1">{item.product?.name}</h6><small className="text-muted">Quantity: {item.quantity}</small></div><strong>{formatPrice(Number(item.product?.sale_price ?? item.product?.price ?? 0) * item.quantity)}</strong></div>)}
         <hr /><div className="d-flex justify-content-between mb-2"><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div><div className="d-flex justify-content-between mb-2"><span>Shipping</span><span className="text-success">Free</span></div><hr /><div className="d-flex justify-content-between"><h5>Total</h5><h5 className="text-primary">{formatPrice(subtotal)}</h5></div>
         <button className="btn btn-success w-100 mt-4" type="button" disabled={isSubmitting} onClick={placeOrder}>{isSubmitting ? "Placing Order..." : "Place Order"}</button><Link to="/cart" className="btn btn-outline-secondary w-100 mt-2">Back to Cart</Link>
       </div></div></div>

@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\AccountSummaryController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CustomerDashboardController;
 use App\Http\Controllers\Api\DemoPaymentController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\Api\SellerOrderController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Middleware\EnsureAccountIsActive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,9 +28,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', EnsureAccountIsActive::class])->group(function () {
 
     Route::get('/profile', [AuthController::class, 'profile']);
+    Route::get('/account/summary', AccountSummaryController::class);
+    Route::get('/customer/dashboard', CustomerDashboardController::class);
     Route::patch('/profile', [AuthController::class, 'updateProfile']);
     Route::patch('/profile/password', [AuthController::class, 'changePassword']);
     Route::get('/addresses', [AddressController::class, 'index']);

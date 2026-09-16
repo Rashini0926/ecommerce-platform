@@ -3,6 +3,7 @@ import {
   FaPlus,
   FaTrash,
 } from "react-icons/fa";
+import { productImageSource, useProductImageFallback } from "../../utils/productImage";
 
 function CartItem({
   item,
@@ -12,14 +13,16 @@ function CartItem({
   isProcessing,
 }) {
   const product = item.product;
-  const itemSubtotal = Number(product?.price || 0) * item.quantity;
+  const unitPrice = Number(product?.sale_price ?? product?.price ?? 0);
+  const itemSubtotal = unitPrice * item.quantity;
 
   return (
     <tr>
       <td className="ps-4">
         <img
-          src={product?.image || "https://via.placeholder.com/120x120?text=Product"}
+          src={productImageSource(product?.image)}
           alt={product?.name || "Product"}
+          onError={useProductImageFallback}
           className="cart-image rounded-4"
           width="72"
           height="72"
@@ -34,7 +37,7 @@ function CartItem({
       </td>
 
       <td className="fw-semibold">
-        Rs. {Number(product?.price || 0).toLocaleString()}
+        Rs. {unitPrice.toLocaleString()}
       </td>
 
       <td>

@@ -24,7 +24,8 @@ export default function ResetPassword() {
     {error && <div className="alert alert-danger">{error}</div>}
     <form onSubmit={submit} className="card card-body shadow-sm">
       <input className="form-control mb-3" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <input className="form-control mb-3" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} minLength="8" required />
+      <input className="form-control mb-2" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} minLength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}" title="Use at least 8 characters with uppercase, lowercase, and a number." required />
+      <small className="text-muted mb-3">Use uppercase, lowercase, and a number.</small>
       <input className="form-control mb-3" type="password" placeholder="Confirm password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} minLength="8" required />
       <button className="btn btn-primary">Reset password</button>
     </form>

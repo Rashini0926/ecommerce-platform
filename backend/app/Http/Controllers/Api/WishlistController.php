@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\WishlistItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class WishlistController extends Controller
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
         ]);
+        Product::visibleToCustomers()->findOrFail($validated['product_id']);
 
         $item = WishlistItem::firstOrCreate([
             'user_id' => $request->user()->id,

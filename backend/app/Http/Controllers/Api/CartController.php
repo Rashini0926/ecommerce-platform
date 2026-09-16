@@ -39,7 +39,7 @@ class CartController extends Controller
         $quantity = $validated['quantity'] ?? 1;
 
         $item = DB::transaction(function () use ($request, $validated, $quantity) {
-            $product = Product::lockForUpdate()->findOrFail($validated['product_id']);
+            $product = Product::visibleToCustomers()->lockForUpdate()->findOrFail($validated['product_id']);
             $item = CartItem::where('user_id', $request->user()->id)
                 ->where('product_id', $product->id)
                 ->lockForUpdate()

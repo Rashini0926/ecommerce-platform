@@ -14,20 +14,56 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { logoutUser } from "../../services/authService";
+import api from "../../utils/api";
+import { ACCOUNT_COUNTS_EVENT, refreshAccountCounts } from "../../utils/accountEvents";
 import LoadingSpinner from "../common/LoadingSpinner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function Navbar() {
   const { user, token, logout } = useAuth();
   const { showToast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [counts, setCounts] = useState({ notifications: 0, wishlist: 0, cart: 0 });
   const navigate = useNavigate();
 
   const userRole = user?.role || "guest";
   const isCustomer = userRole === "customer";
   const isSeller = userRole === "seller";
   const isAdmin = userRole === "admin";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCounts = async () => {
+      if (!token || !user) {
+        if (!cancelled) setCounts({ notifications: 0, wishlist: 0, cart: 0 });
+        return;
+      }
+
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      try {
+        const response = await api.get("/account/summary", config);
+        if (cancelled) return;
+        const accountCounts = response.data.counts || {};
+        setCounts({
+          notifications: Number(accountCounts.unread_notifications || 0),
+          wishlist: Number(accountCounts.wishlist_items || 0),
+          cart: Number(accountCounts.cart_items || 0),
+        });
+      } catch {
+        if (!cancelled) setCounts({ notifications: 0, wishlist: 0, cart: 0 });
+      }
+    };
+
+    loadCounts();
+    window.addEventListener(ACCOUNT_COUNTS_EVENT, loadCounts);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(ACCOUNT_COUNTS_EVENT, loadCounts);
+    };
+  }, [isCustomer, token, user]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -36,12 +72,12 @@ function Navbar() {
       if (token) {
         await logoutUser(token);
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       showToast("Logout request failed, but your session was cleared.", "danger");
     }
 
     logout();
+    refreshAccountCounts();
     showToast("You have been logged out.", "info");
     navigate("/login");
     setIsLoggingOut(false);
@@ -117,9 +153,7 @@ function Navbar() {
                   aria-label="Notifications"
                 >
                   <FaBell />
-                  <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">
-                    {isAdmin ? "5" : isSeller ? "2" : "4"}
-                  </span>
+                  {counts.notifications > 0 && <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">{badgeCount(counts.notifications)}</span>}
                 </Link>
               </li>
             )}
@@ -134,9 +168,7 @@ function Navbar() {
                     aria-label="Wishlist"
                   >
                     <FaHeart />
-                    <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">
-                      3
-                    </span>
+                    {isCustomer && counts.wishlist > 0 && <span className="position-absolute top-0 start-100 translate-middle badge bg-danger">{badgeCount(counts.wishlist)}</span>}
                   </Link>
                 </li>
 
@@ -147,9 +179,7 @@ function Navbar() {
                     aria-label="Cart"
                   >
                     <FaShoppingCart />
-                    <span className="position-absolute top-0 start-100 translate-middle badge bg-primary">
-                      2
-                    </span>
+                    {isCustomer && counts.cart > 0 && <span className="position-absolute top-0 start-100 translate-middle badge bg-primary">{badgeCount(counts.cart)}</span>}
                   </Link>
                 </li>
               </>
@@ -229,3 +259,7 @@ function Navbar() {
 }
 
 export default Navbar;
+
+function badgeCount(count) {
+  return count > 99 ? "99+" : count;
+}

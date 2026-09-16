@@ -14,6 +14,7 @@ import Navbar from "../components/layout/Navbar";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
+import { refreshAccountCounts } from "../utils/accountEvents";
 
 const authConfig = (token) => ({
   headers: { Authorization: `Bearer ${token}` },
@@ -94,6 +95,7 @@ export default function Notifications() {
         item.id === notification.id ? response.data.notification : item
       ));
       setUnreadCount((count) => Math.max(0, count - 1));
+      refreshAccountCounts();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to update notification.");
     }
@@ -107,6 +109,7 @@ export default function Notifications() {
         read_at: item.read_at || new Date().toISOString(),
       })));
       setUnreadCount(0);
+      refreshAccountCounts();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to update notifications.");
     }

@@ -1,8 +1,8 @@
 import {
-  FaHeadset,
+  FaBell,
   FaShieldAlt,
   FaShippingFast,
-  FaUndo,
+  FaStar,
 } from "react-icons/fa";
 
 const features = [
@@ -16,22 +16,22 @@ const features = [
   {
     id: 2,
     icon: <FaShieldAlt />,
-    title: "Secure Payment",
-    description: "100% secure online payment with trusted payment gateways.",
+    title: "Safe Demo Checkout",
+    description: "Protected checkout flow with card simulation and cash on delivery.",
     tone: "success",
   },
   {
     id: 3,
-    icon: <FaHeadset />,
-    title: "24/7 Support",
-    description: "Our customer support team is available anytime to help you.",
+    icon: <FaBell />,
+    title: "Order Notifications",
+    description: "Receive in-app, email, and demo SMS updates as orders progress.",
     tone: "accent",
   },
   {
     id: 4,
-    icon: <FaUndo />,
-    title: "Easy Returns",
-    description: "Hassle-free returns and refunds within the return period.",
+    icon: <FaStar />,
+    title: "Verified Reviews",
+    description: "Product ratings are accepted from customers with delivered purchases.",
     tone: "danger",
   },
 ];
