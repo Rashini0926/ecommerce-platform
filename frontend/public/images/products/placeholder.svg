@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-labelledby="title description">
+  <title id="title">Product image unavailable</title>
+  <desc id="description">A neutral shopping bag illustration used when a product has no image.</desc>
+  <rect width="640" height="480" rx="28" fill="#f1f5f9"/>
+  <circle cx="320" cy="216" r="116" fill="#dbeafe"/>
+  <path d="M235 188h170l-14 156H249l-14-156Z" fill="#2563eb" opacity=".9"/>
+  <path d="M278 200v-25c0-24 19-44 42-44s42 20 42 44v25" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="281" cy="226" r="8" fill="#fff"/>
+  <circle cx="359" cy="226" r="8" fill="#fff"/>
+  <text x="320" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#475569">ShopEase Product</text>
+</svg>

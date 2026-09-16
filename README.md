@@ -430,7 +430,7 @@ It supports:
 
 **No actual banking or payment provider is connected, and no real financial transactions are performed.**
 
----
+### Payments and delivery
 
 # 📦 Order & Delivery Management
 
@@ -583,7 +583,13 @@ npm run dev
 
 Also ensure that **MySQL is running through XAMPP** before starting the backend.
 
----
+```bash
+git pull origin develop
+git checkout -b feature/your-feature
+git add <specific-files>
+git commit -m "feat: describe the change"
+git push origin feature/your-feature
+```
 
 # 🎯 Project Purpose
 

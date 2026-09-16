@@ -1,0 +1,86 @@
+import api from "../utils/api";
+
+const authConfig = (token) => ({
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+
+export const createOrder = async (token, checkoutData) => {
+  const response = await api.post("/orders", checkoutData, authConfig(token));
+
+  return response.data;
+};
+
+export const getOrders = async (token) => {
+  const response = await api.get("/orders", authConfig(token));
+
+  return response.data;
+};
+
+export const getOrder = async (token, orderId) => {
+  const response = await api.get(`/orders/${orderId}`, authConfig(token));
+
+  return response.data;
+};
+
+export const getOrderTracking = async (token, orderId) => {
+  const response = await api.get(`/orders/${orderId}/tracking`, authConfig(token));
+
+  return response.data;
+};
+
+export const cancelOrder = async (token, orderId) => {
+  const response = await api.patch(`/orders/${orderId}/cancel`, {}, authConfig(token));
+
+  return response.data;
+};
+
+export const getAdminOrders = async (token, params = {}) => {
+  const response = await api.get("/admin/orders", {
+    ...authConfig(token),
+    params,
+  });
+
+  return response.data;
+};
+
+export const updateOrderStatus = async (token, orderId, orderStatus) => {
+  const response = await api.patch(
+    `/admin/orders/${orderId}/status`,
+    { order_status: orderStatus },
+    authConfig(token)
+  );
+
+  return response.data;
+};
+
+export const initiateDemoPayment = async (token, orderId) => {
+  const response = await api.post(
+    `/orders/${orderId}/payment/initiate`,
+    {},
+    authConfig(token)
+  );
+
+  return response.data;
+};
+
+export const completeDemoPayment = async (token, orderId) => {
+  const response = await api.post(
+    `/orders/${orderId}/payment/complete`,
+    {},
+    authConfig(token)
+  );
+
+  return response.data;
+};
+
+export const updateShipping = async (token, orderId, shippingData) => {
+  const response = await api.patch(
+    `/admin/orders/${orderId}/shipping`,
+    shippingData,
+    authConfig(token)
+  );
+
+  return response.data;
+};
